@@ -1,0 +1,164 @@
+# ============================================================
+# /aandavar_fixed/.htaccess — Security Rules
+# Aandavar App | Apache 2.4+
+# Subfolder install: /aandavar_fixed/
+# ============================================================
+
+# ── ENGINE ───────────────────────────────────────────────────
+Options -Indexes -ExecCGI
+Options +FollowSymLinks
+
+# ── PHP HARDENING ─────────────────────────────────────────────
+<IfModule mod_php.c>
+    php_flag display_errors         Off
+    php_flag display_startup_errors Off
+    php_flag log_errors             On
+    php_flag expose_php             Off
+    php_flag allow_url_fopen        Off
+    php_flag allow_url_include      Off
+    php_flag register_globals       Off
+    php_value session.cookie_httponly  1
+    php_value session.cookie_samesite  Strict
+    php_value session.use_strict_mode  1
+    php_value session.use_only_cookies 1
+</IfModule>
+
+# ── BLOCK SENSITIVE DOTFILES ──────────────────────────────────
+<FilesMatch "^\.(env|gitignore|htpasswd|git|svn|DS_Store)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order deny,allow
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# ── BLOCK SENSITIVE FILE TYPES ────────────────────────────────
+<FilesMatch "\.(sql|log|bak|sh|bat|conf|ini|lock|md|yml|yaml)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order deny,allow
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# ── BLOCK .json EXCEPT manifest.json (PWA requirement) ────────
+<FilesMatch "^(?!manifest\.json$).*\.json$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order deny,allow
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# ── BLOCK .txt EXCEPT robots.txt ──────────────────────────────
+<FilesMatch "^(?!robots\.txt$).*\.txt$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order deny,allow
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# ── BLOCK .xml EXCEPT browserconfig.xml ───────────────────────
+<FilesMatch "^(?!browserconfig\.xml$).*\.xml$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order deny,allow
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# ── REWRITE RULES ─────────────────────────────────────────────
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # ── Force HTTPS ───────────────────────────────────────────
+    RewriteCond %{HTTPS} off
+    RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+    # ── PWA REQUIRED FILES — allow these always ───────────────
+    # These 3 files MUST be publicly accessible for PWA to work
+    RewriteRule ^manifest\.json$ - [L]
+    RewriteRule ^sw\.js$ - [L]
+    RewriteRule ^offline\.html$ - [L]
+
+    # ── Block /old/ folder ────────────────────────────────────
+    RewriteRule ^old(/.*)?$ - [F,L]
+
+    # ── Block direct access to /includes/ ────────────────────
+    RewriteRule ^includes/.*$ - [F,L]
+
+    # ── Block .env anywhere ───────────────────────────────────
+    RewriteRule (^|/)\.env - [F,L]
+</IfModule>
+
+# ── SECURITY HEADERS ─────────────────────────────────────────
+<IfModule mod_headers.c>
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-XSS-Protection "1; mode=block"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header unset Server
+    Header always unset X-Powered-By
+    # Allow browser location and camera for field submission pages.
+    # Do not add another Permissions-Policy header elsewhere; duplicate
+    # restrictive values can disable geolocation even when browser permission is allowed.
+    Header always set Permissions-Policy "geolocation=(self), camera=(self), microphone=(), payment=()"
+    Header always set Feature-Policy "geolocation 'self'; camera 'self'; microphone 'none'"
+
+    # Content Security Policy
+    Header always set Content-Security-Policy "\
+default-src 'self'; \
+script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; \
+style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; \
+font-src 'self' https://fonts.gstatic.com data:; \
+img-src 'self' data: blob:; \
+connect-src 'self'; \
+frame-ancestors 'self'; \
+base-uri 'self'; \
+form-action 'self';"
+
+    # Correct MIME type for service worker (critical for SW registration)
+    <FilesMatch "sw\.js$">
+        Header set Content-Type "application/javascript"
+        Header set Service-Worker-Allowed "/aandavar_fixed/"
+    </FilesMatch>
+
+    # Correct MIME type for manifest
+    <FilesMatch "manifest\.json$">
+        Header set Content-Type "application/manifest+json"
+    </FilesMatch>
+
+    # HSTS — uncomment after confirming SSL works
+    # Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+</IfModule>
+
+# ── DISABLE SERVER SIGNATURE ─────────────────────────────────
+ServerSignature Off
+
+# ── BLOCK BAD BOTS ───────────────────────────────────────────
+<IfModule mod_rewrite.c>
+    RewriteCond %{HTTP_USER_AGENT} (sqlmap|nikto|nmap|masscan|w3af|acunetix|havij|pangolin|netsparker) [NC]
+    RewriteRule .* - [F,L]
+</IfModule>
+
+# ── LIMIT REQUEST SIZE ────────────────────────────────────────
+<IfModule mod_php.c>
+    php_value upload_max_filesize  10M
+    php_value post_max_size        12M
+    php_value max_execution_time   60
+    php_value max_input_time       60
+</IfModule>
+
+# ── CHARSET ──────────────────────────────────────────────────
+AddDefaultCharset UTF-8

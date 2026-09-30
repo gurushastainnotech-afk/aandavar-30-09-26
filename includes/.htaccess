@@ -1,0 +1,14 @@
+# ============================================================
+# /includes/.htaccess — Block ALL direct HTTP access
+# ============================================================
+# PHP files in this folder are server-side only.
+# No visitor should ever reach them directly via URL.
+# ============================================================
+
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order deny,allow
+    Deny from all
+</IfModule>

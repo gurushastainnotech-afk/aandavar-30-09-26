@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Offline — Aandavar FieldApp</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: system-ui, sans-serif;
+    background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 50%, #1e40af 100%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    color: #fff;
+    text-align: center;
+  }
+  .card {
+    background: rgba(255,255,255,0.12);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 16px;
+    padding: 40px 32px;
+    max-width: 360px;
+    width: 100%;
+  }
+  .icon { font-size: 3.5rem; margin-bottom: 16px; display: block; }
+  h1 { font-size: 1.4rem; font-weight: 700; margin-bottom: 10px; }
+  p { font-size: 0.92rem; opacity: 0.85; line-height: 1.6; margin-bottom: 24px; }
+  .btn {
+    display: inline-block;
+    background: #fff;
+    color: #1d4ed8;
+    font-weight: 600;
+    font-size: 0.9rem;
+    padding: 11px 28px;
+    border-radius: 8px;
+    text-decoration: none;
+    cursor: pointer;
+    border: none;
+    font-family: inherit;
+  }
+  .logo {
+    width: 56px; height: 56px; border-radius: 12px;
+    margin: 0 auto 20px; display: block;
+    object-fit: contain;
+    background: rgba(255,255,255,0.15);
+    padding: 6px;
+  }
+</style>
+</head>
+<body>
+<div class="card">
+  <img src="/aandavar_fixed/assets/logo.png" alt="Aandavar" class="logo"
+       onerror="this.style.display='none'">
+  <span class="icon">📡</span>
+  <h1>You're Offline</h1>
+  <p>Aandavar FieldApp needs an internet connection.<br>Check your network and try again.</p>
+  <button class="btn" onclick="window.location.reload()">Try Again</button>
+</div>
+</body>
+</html>

@@ -1,0 +1,35 @@
+# ============================================================
+# .gitignore — Aandavar App
+# ============================================================
+
+# ── NEVER commit these ────────────────────────────────────────
+.env
+*.env.local
+*.env.production
+
+# ── Uploads (user data) ───────────────────────────────────────
+/uploads/
+/office_admin/data/viz_gallery.db
+
+# ── Logs ─────────────────────────────────────────────────────
+*.log
+/logs/
+
+# ── Old / backup folders ──────────────────────────────────────
+/old/
+*.sql.bak
+*.bak
+
+# ── OS junk ──────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── IDE ───────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+
+# ── Composer / NPM (if ever added) ───────────────────────────
+/vendor/
+/node_modules/

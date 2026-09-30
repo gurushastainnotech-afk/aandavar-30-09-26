@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Aandavar Enterprises — Tiles Calculator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /* ── TOKENS ─────────────────────────────────────────── */
+  :root {
+    --ink:    #0d1117;
+    --ink2:   #161c25;
+    --ink3:   #1e2631;
+    --border: rgba(255,255,255,0.07);
+    --amber:  #f5a623;
+    --amber2: #ffc85a;
+    --cream:  #f5efe6;
+    --smoke:  #8a96a8;
+    --smoke2: #bcc5d0;
+    --red:    #e05252;
+    --green:  #4caf7d;
+    --font-head: 'Syne', sans-serif;
+    --font-mono: 'DM Mono', monospace;
+  }
+
+  /* ── RESET ──────────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    background: var(--ink);
+    color: var(--cream);
+    font-family: var(--font-head);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── GRID NOISE BACKGROUND ──────────────────────────── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: 0;
+    background-image:
+      linear-gradient(rgba(245,166,35,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(245,166,35,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+  }
+
+  /* ── LAYOUT ─────────────────────────────────────────── */
+  .page { position: relative; z-index: 1; max-width: 980px; margin: 0 auto; padding: 24px 20px 80px; }
+
+  /* ── TOPBAR ─────────────────────────────────────────── */
+  .topbar {
+    display: flex; align-items: center; gap: 16px;
+    margin-bottom: 36px; padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .logo-mark {
+    width: 42px; height: 42px; background: var(--amber);
+    clip-path: polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; font-size: 13px; font-weight: 800; color: var(--ink);
+  }
+  .brand { flex: 1; }
+  .brand-name {
+    font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--amber); font-family: var(--font-mono);
+  }
+  .brand-title {
+    font-size: 20px; font-weight: 800; line-height: 1.1; color: var(--cream);
+    letter-spacing: -0.02em;
+  }
+  .topbar-actions { display: flex; gap: 8px; align-items: center; }
+
+  /* ── BUTTONS ─────────────────────────────────────────── */
+  .btn {
+    font-family: var(--font-head); font-size: 12px; font-weight: 700;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 8px 14px; border-radius: 6px; cursor: pointer;
+    border: 1px solid var(--border); transition: all 0.18s ease;
+    background: var(--ink3); color: var(--smoke2);
+  }
+  .btn:hover { border-color: var(--amber); color: var(--amber); }
+  .btn-primary {
+    background: var(--amber); color: var(--ink); border-color: var(--amber);
+  }
+  .btn-primary:hover { background: var(--amber2); border-color: var(--amber2); color: var(--ink); }
+  .btn-ghost {
+    background: transparent; color: var(--smoke);
+    border: 1px solid var(--border);
+  }
+  .btn-ghost:hover { color: var(--red); border-color: var(--red); }
+
+  /* ── SECTION LABEL ──────────────────────────────────── */
+  .section-label {
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.2em;
+    text-transform: uppercase; color: var(--amber); margin-bottom: 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  /* ── CARD ────────────────────────────────────────────── */
+  .card {
+    background: var(--ink2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 22px;
+    margin-bottom: 14px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .card:hover { border-color: rgba(245,166,35,0.2); }
+  .card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, var(--amber) 0%, transparent 60%);
+    opacity: 0; transition: opacity 0.2s;
+  }
+  .card:hover::before { opacity: 1; }
+  .card-title {
+    font-size: 13px; font-weight: 700; letter-spacing: 0.04em;
+    color: var(--cream); margin-bottom: 16px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .card-title .icon {
+    width: 24px; height: 24px; background: rgba(245,166,35,0.12);
+    border-radius: 5px; display: flex; align-items: center; justify-content: center;
+    font-size: 12px; color: var(--amber); flex-shrink: 0;
+  }
+
+  /* ── FORM GRID ───────────────────────────────────────── */
+  .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px,1fr)); gap: 12px; align-items: end; }
+  .form-row.cols-2 { grid-template-columns: 1fr 1fr; }
+  .form-row.cols-3 { grid-template-columns: repeat(3,1fr); }
+
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field-label {
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--smoke);
+  }
+  .field input[type="number"],
+  .field select,
+  .field input[type="text"] {
+    background: var(--ink);
+    color: var(--cream);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 9px 12px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.18s, box-shadow 0.18s;
+    width: 100%;
+    appearance: none; -webkit-appearance: none;
+  }
+  .field input::placeholder { color: rgba(138,150,168,0.4); }
+  .field input:focus,
+  .field select:focus {
+    border-color: var(--amber);
+    box-shadow: 0 0 0 3px rgba(245,166,35,0.12);
+  }
+  /* custom select arrow */
+  .field select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238a96a8' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 30px;
+  }
+  .waste-row { display: flex; gap: 8px; align-items: center; }
+  .waste-row select { flex: 1; }
+  .waste-row input[type="number"] { width: 90px; }
+
+  /* ── DIM INPUTS — BIG STYLE ──────────────────────────── */
+  .dim-input-group { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
+  .dim-field { position: relative; }
+  .dim-field input {
+    background: var(--ink);
+    color: var(--cream);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 12px 8px;
+    font-family: var(--font-mono);
+    font-size: 18px; font-weight: 500;
+    width: 100%; outline: none;
+    transition: border-color 0.18s, box-shadow 0.18s;
+    appearance: none;
+  }
+  .dim-field input:focus {
+    border-color: var(--amber);
+    box-shadow: 0 0 0 3px rgba(245,166,35,0.12);
+  }
+  .dim-field input::placeholder { color: rgba(138,150,168,0.3); font-size: 14px; }
+  .dim-field-label {
+    position: absolute; top: 7px; left: 12px;
+    font-family: var(--font-mono); font-size: 9px;
+    letter-spacing: 0.18em; text-transform: uppercase; color: var(--amber);
+    pointer-events: none;
+  }
+  .dim-unit {
+    position: absolute; bottom: 10px; right: 12px;
+    font-family: var(--font-mono); font-size: 10px;
+    color: var(--smoke); pointer-events: none;
+  }
+
+  /* ── RESULTS TABLE ───────────────────────────────────── */
+  .results-card { background: var(--ink2); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin-bottom: 14px; }
+  .results-header {
+    padding: 14px 22px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .results-header .title { font-size: 13px; font-weight: 700; color: var(--cream); }
+
+  table { width: 100%; border-collapse: collapse; }
+  thead tr { background: rgba(245,166,35,0.06); }
+  th {
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--amber);
+    padding: 11px 14px; text-align: left; border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  td {
+    padding: 12px 14px; font-family: var(--font-mono); font-size: 13px;
+    color: var(--smoke2); border-bottom: 1px solid rgba(255,255,255,0.04);
+    transition: background 0.15s;
+  }
+  tbody tr:hover td { background: rgba(245,166,35,0.04); }
+  tbody tr:last-child td { border-bottom: none; }
+  td:first-child { color: var(--cream); font-weight: 500; }
+  td.num { color: var(--cream); }
+  td.boxes { color: var(--amber); font-weight: 500; }
+
+  tfoot tr { background: rgba(245,166,35,0.08); }
+  tfoot td {
+    font-weight: 700; color: var(--amber);
+    border-top: 1px solid rgba(245,166,35,0.2);
+    font-size: 13px;
+  }
+
+  /* ── STAT CHIPS ──────────────────────────────────────── */
+  .stat-row { display: flex; gap: 10px; flex-wrap: wrap; padding: 16px 22px; border-top: 1px solid var(--border); }
+  .stat-chip {
+    flex: 1; min-width: 120px; background: var(--ink3);
+    border: 1px solid var(--border); border-radius: 8px;
+    padding: 12px 16px; text-align: center;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+  .stat-chip:hover { border-color: rgba(245,166,35,0.3); transform: translateY(-1px); }
+  .stat-chip .val {
+    font-family: var(--font-mono); font-size: 22px; font-weight: 500;
+    color: var(--cream); line-height: 1;
+  }
+  .stat-chip .lbl {
+    font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.16em;
+    text-transform: uppercase; color: var(--smoke); margin-top: 4px;
+  }
+  .stat-chip.highlight .val { color: var(--amber); }
+
+  /* ── FOOTER NOTE ─────────────────────────────────────── */
+  .footnote {
+    font-family: var(--font-mono); font-size: 11px; color: var(--smoke);
+    text-align: center; margin-top: 6px; padding: 0 8px;
+    line-height: 1.6;
+  }
+
+  /* ── FLOATING BATH BUTTON ────────────────────────────── */
+  .fab-wrap { position: fixed; bottom: 28px; right: 24px; z-index: 900; }
+  .fab {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    width: 68px; height: 68px; border-radius: 50%;
+    background: var(--amber); color: var(--ink);
+    font-family: var(--font-head); font-size: 11px; font-weight: 800;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    border: none; cursor: pointer;
+    box-shadow: 0 8px 32px rgba(245,166,35,0.4);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .fab:hover { transform: translateY(-2px) scale(1.04); box-shadow: 0 12px 40px rgba(245,166,35,0.55); }
+  .fab svg { margin-bottom: 2px; }
+
+  /* ── MODAL ───────────────────────────────────────────── */
+  .modal-backdrop {
+    position: fixed; inset: 0; z-index: 1100;
+    background: rgba(0,0,0,0.7); backdrop-filter: blur(6px);
+    display: none; align-items: center; justify-content: center; padding: 16px;
+  }
+  .modal-backdrop.open { display: flex; }
+  .modal {
+    background: var(--ink2); border: 1px solid var(--border);
+    border-radius: 14px; width: min(940px,100%);
+    max-height: 92vh; overflow: auto;
+    position: relative;
+    animation: modal-in 0.25s cubic-bezier(0.34,1.4,0.64,1) both;
+  }
+  @keyframes modal-in { from { opacity:0; transform: scale(0.93) translateY(16px); } to { opacity:1; transform: scale(1) translateY(0); } }
+  .modal-header {
+    padding: 18px 22px 16px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 12px; position: sticky; top: 0;
+    background: var(--ink2); z-index: 10;
+  }
+  .modal-title { font-size: 16px; font-weight: 800; flex: 1; }
+  .modal-body { padding: 20px 22px; }
+
+  /* ── PARTITION VIZ ───────────────────────────────────── */
+  .partition-viz {
+    display: flex; flex-direction: column; gap: 4px;
+    width: 40px; flex-shrink: 0;
+  }
+  .pv-seg {
+    border-radius: 3px; transition: height 0.3s ease;
+    min-height: 6px; display: flex; align-items: center; justify-content: center;
+    font-size: 8px; font-weight: 700; color: rgba(0,0,0,0.5);
+  }
+  .pv-light { background: #e8d5c0; }
+  .pv-high  { background: var(--amber); }
+  .pv-dark  { background: #5c4a35; }
+
+  /* ── PART CARDS ──────────────────────────────────────── */
+  .part-cards { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-top: 14px; }
+  .part-card {
+    background: var(--ink3); border: 1px solid var(--border);
+    border-radius: 8px; padding: 14px; transition: border-color 0.2s;
+  }
+  .part-card:hover { border-color: rgba(245,166,35,0.25); }
+  .part-card-name {
+    font-size: 12px; font-weight: 700; letter-spacing: 0.05em; margin-bottom: 10px;
+  }
+  .part-card-name.light { color: #e8d5c0; }
+  .part-card-name.high  { color: var(--amber); }
+  .part-card-name.dark  { color: #b09070; }
+  .part-stat { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
+  .part-stat .k { font-family: var(--font-mono); font-size: 10px; color: var(--smoke); }
+  .part-stat .v { font-family: var(--font-mono); font-size: 12px; color: var(--cream); }
+
+  /* ── VALIDATION MESSAGE ──────────────────────────────── */
+  .validation {
+    font-family: var(--font-mono); font-size: 11px; border-radius: 6px;
+    padding: 8px 12px; margin-bottom: 12px; display: none;
+  }
+  .validation.error { background: rgba(224,82,82,0.12); color: var(--red); border: 1px solid rgba(224,82,82,0.3); display: block; }
+
+  /* ── ANIMATIONS ──────────────────────────────────────── */
+  @keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+  .fade-in { animation: fadeUp 0.35s ease both; }
+  td, .stat-chip .val { transition: color 0.25s, opacity 0.2s; }
+
+  /* ── PRINT ───────────────────────────────────────────── */
+  #printView { display: none; }
+  @media print {
+    body { background: #fff; color: #000; }
+    .topbar-actions, .fab-wrap, .modal-backdrop, .no-print { display: none !important; }
+    .card, .results-card { box-shadow: none; border: 1px solid #ccc; }
+    #printView { display: block; }
+    .page { padding: 0; }
+    table { border: 1px solid #333; }
+    th, td { border: 1px solid #ccc; }
+  }
+
+  /* ── RESPONSIVE ──────────────────────────────────────── */
+  @media (max-width: 600px) {
+    .dim-input-group { grid-template-columns: 1fr 1fr; }
+    .dim-input-group .dim-field:nth-child(3) { grid-column: span 2; }
+    .part-cards { grid-template-columns: 1fr; }
+    .form-row.cols-3 { grid-template-columns: 1fr 1fr; }
+    .topbar { flex-wrap: wrap; }
+    .brand-title { font-size: 16px; }
+  }
+
+  /* hidden utility inputs */
+  .hidden-inputs { display: none; }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <!-- TOP BAR -->
+  <div class="topbar no-print">
+    <div class="logo-mark">AE</div>
+    <div class="brand">
+      <div class="brand-name">Aandavar Enterprises</div>
+      <div class="brand-title">Tiles Calculator</div>
+    </div>
+    <div class="topbar-actions">
+      <button id="themeToggle" class="btn">☀ / ☾</button>
+      <button id="savePdfBtn" class="btn btn-primary">↓ PDF</button>
+    </div>
+  </div>
+
+  <!-- ROOM DIMENSIONS -->
+  <div class="section-label">Room Dimensions</div>
+  <div class="card">
+    <div class="dim-input-group">
+      <div class="dim-field">
+        <span class="dim-field-label">Length</span>
+        <input id="roomLen" type="number" step="0.01" placeholder="0.00">
+        <span class="dim-unit">ft</span>
+      </div>
+      <div class="dim-field">
+        <span class="dim-field-label">Width</span>
+        <input id="roomWid" type="number" step="0.01" placeholder="0.00">
+        <span class="dim-unit">ft</span>
+      </div>
+      <div class="dim-field">
+        <span class="dim-field-label">Height</span>
+        <input id="roomHei" type="number" step="0.01" placeholder="0.00">
+        <span class="dim-unit">ft</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- WALL TILE -->
+  <div class="section-label">Wall Tiles</div>
+  <div class="card">
+    <div class="form-row cols-2">
+      <div class="field">
+        <span class="field-label">Tile Size</span>
+        <select id="wallTileSelect">
+          <option value="1.5|1|6">1.50 × 1.00 ft — 6/box</option>
+          <option value="1|1|8">1.00 × 1.00 ft — 8/box</option>
+          <option value="2|1|5">2.00 × 1.00 ft — 5/box</option>
+          <option value="2|2|4">2.00 × 2.00 ft — 4/box</option>
+          <option value="1.25|1.25|5">1.25 × 1.25 ft — 5/box</option>
+          <option value="4|2|2">4.00 × 2.00 ft — 2/box</option>
+          <option value="2.75|5.5|2">2.75 × 5.50 ft — 2/box</option>
+          <option value="6|4|2">6.00 × 4.00 ft — 2/box</option>
+          <option value="2.75|8|1">2.75 × 8.00 ft — 1/box</option>
+        </select>
+      </div>
+      <div class="field">
+        <span class="field-label">Wastage %</span>
+        <div class="waste-row">
+          <select id="wallWasteSelect">
+            <option value="0">0%</option>
+            <option value="5">5%</option>
+            <option value="10" selected>10%</option>
+            <option value="other">Other…</option>
+          </select>
+          <input id="wallWasteOther" type="number" min="0" max="100" step="1" placeholder="%" style="display:none;width:90px">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FLOOR TILE -->
+  <div class="section-label">Floor Tiles</div>
+  <div class="card">
+    <div class="form-row cols-2">
+      <div class="field">
+        <span class="field-label">Tile Size</span>
+        <select id="floorTileSelect">
+          <option value="1.5|1|6">1.50 × 1.00 ft — 6/box</option>
+          <option value="1|1|8">1.00 × 1.00 ft — 8/box</option>
+          <option value="2|1|5">2.00 × 1.00 ft — 5/box</option>
+          <option value="2|2|4">2.00 × 2.00 ft — 4/box</option>
+          <option value="1.25|1.25|5">1.25 × 1.25 ft — 5/box</option>
+          <option value="4|2|2">4.00 × 2.00 ft — 2/box</option>
+          <option value="2.75|5.5|2">2.75 × 5.50 ft — 2/box</option>
+          <option value="6|4|2">6.00 × 4.00 ft — 2/box</option>
+          <option value="2.75|8|1">2.75 × 8.00 ft — 1/box</option>
+        </select>
+      </div>
+      <div class="field">
+        <span class="field-label">Wastage %</span>
+        <div class="waste-row">
+          <select id="floorWasteSelect">
+            <option value="0">0%</option>
+            <option value="5">5%</option>
+            <option value="10">10%</option>
+            <option value="other">Other…</option>
+          </select>
+          <input id="floorWasteOther" type="number" min="0" max="100" step="1" placeholder="%" style="display:none;width:90px">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div class="section-label">Results</div>
+  <div class="results-card">
+    <div class="results-header">
+      <span class="title">Surface Breakdown</span>
+      <button id="resetBtn" class="btn btn-ghost no-print">Reset</button>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Surface</th>
+          <th>Area ft²</th>
+          <th>Tile Size</th>
+          <th>Tiles</th>
+          <th>Extra</th>
+          <th>Boxes</th>
+        </tr>
+      </thead>
+      <tbody id="summaryBody"></tbody>
+      <tfoot>
+        <tr>
+          <td colspan="3" style="color:var(--amber)">Totals</td>
+          <td id="totTiles">—</td>
+          <td id="totExtra">—</td>
+          <td id="totBoxesBuy" style="color:var(--amber)">—</td>
+        </tr>
+      </tfoot>
+    </table>
+    <div class="stat-row" id="mainStats">
+      <div class="stat-chip">
+        <div class="val" id="chipTiles">—</div>
+        <div class="lbl">Tiles Needed</div>
+      </div>
+      <div class="stat-chip">
+        <div class="val" id="chipExtra">—</div>
+        <div class="lbl">Extra (wastage)</div>
+      </div>
+      <div class="stat-chip highlight">
+        <div class="val" id="chipBoxes">—</div>
+        <div class="lbl">Boxes to Buy</div>
+      </div>
+    </div>
+  </div>
+
+  <p class="footnote no-print">Full-grid coverage assumed. Deduct area for doors, windows & fixtures.</p>
+
+</div><!-- /.page -->
+
+<!-- HIDDEN INPUTS -->
+<div class="hidden-inputs">
+  <input id="tileW" type="number" step="0.01">
+  <input id="tileH" type="number" step="0.01">
+  <input id="floorW" type="number" step="0.01">
+  <input id="floorH" type="number" step="0.01">
+</div>
+
+<!-- FAB -->
+<div class="fab-wrap no-print">
+  <button id="openBathroom" class="fab" title="Open Bathroom Calculator">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6 Q9 3 12 3 Q15 3 15 6"/><rect x="4" y="6" width="16" height="12" rx="2"/><line x1="8" y1="18" x2="7" y2="21"/><line x1="16" y1="18" x2="17" y2="21"/></svg>
+    Bath
+  </button>
+</div>
+
+<!-- BATHROOM MODAL -->
+<div id="modalBackdrop" class="modal-backdrop" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-header">
+      <div style="width:32px;height:32px;background:rgba(245,166,35,0.12);border-radius:7px;display:flex;align-items:center;justify-content:center;color:var(--amber)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6 Q9 3 12 3 Q15 3 15 6"/><rect x="4" y="6" width="16" height="12" rx="2"/></svg>
+      </div>
+      <h2 id="modalTitle" class="modal-title">Bathroom Calculator</h2>
+      <button class="btn no-print" id="closeModal" style="margin-left:auto">✕ Close</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Partition heights -->
+      <div class="section-label" style="margin-bottom:10px">Partition Heights</div>
+      <div class="card" style="display:flex;gap:16px;align-items:flex-start">
+        <div class="partition-viz" id="partViz">
+          <div class="pv-seg pv-light" id="pvLight" style="height:30px">L</div>
+          <div class="pv-seg pv-high"  id="pvHigh"  style="height:15px">H</div>
+          <div class="pv-seg pv-dark"  id="pvDark"  style="height:25px">D</div>
+        </div>
+        <div style="flex:1">
+          <div class="form-row cols-3">
+            <div class="field">
+              <span class="field-label" style="color:#e8d5c0">Light Height</span>
+              <div style="position:relative">
+                <input id="partLightH" type="number" step="0.01" placeholder="2.50" style="background:var(--ink);color:var(--cream);border:1px solid var(--border);border-radius:6px;padding:9px 30px 9px 12px;font-family:var(--font-mono);font-size:13px;outline:none;width:100%;transition:border-color 0.18s">
+                <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);font-family:var(--font-mono);font-size:10px;color:var(--smoke);pointer-events:none">ft</span>
+              </div>
+            </div>
+            <div class="field">
+              <span class="field-label" style="color:var(--amber)">Highlight Height</span>
+              <div style="position:relative">
+                <input id="partHighH" type="number" step="0.01" placeholder="3.00" style="background:var(--ink);color:var(--cream);border:1px solid var(--border);border-radius:6px;padding:9px 30px 9px 12px;font-family:var(--font-mono);font-size:13px;outline:none;width:100%;transition:border-color 0.18s">
+                <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);font-family:var(--font-mono);font-size:10px;color:var(--smoke);pointer-events:none">ft</span>
+              </div>
+            </div>
+            <div class="field">
+              <span class="field-label" style="color:#b09070">Dark Height</span>
+              <div style="position:relative">
+                <input id="partDarkH" type="number" step="0.01" placeholder="2.50" style="background:var(--ink);color:var(--cream);border:1px solid var(--border);border-radius:6px;padding:9px 30px 9px 12px;font-family:var(--font-mono);font-size:13px;outline:none;width:100%;transition:border-color 0.18s">
+                <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);font-family:var(--font-mono);font-size:10px;color:var(--smoke);pointer-events:none">ft</span>
+              </div>
+            </div>
+          </div>
+          <p style="font-family:var(--font-mono);font-size:10px;color:var(--smoke);margin-top:8px">Partitions stack vertically — total must not exceed room height.</p>
+        </div>
+      </div>
+
+      <!-- Bath tile + waste -->
+      <div class="section-label" style="margin-bottom:10px;margin-top:4px">Tile Settings</div>
+      <div class="card">
+        <div class="form-row cols-2">
+          <div class="field">
+            <span class="field-label">Tile Size</span>
+            <select id="bathTileSelect">
+              <option value="1.5|1|6">1.50 × 1.00 ft — 6/box</option>
+              <option value="1|1|8">1.00 × 1.00 ft — 8/box</option>
+              <option value="2|1|5">2.00 × 1.00 ft — 5/box</option>
+              <option value="2|2|4" selected>2.00 × 2.00 ft — 4/box</option>
+              <option value="1.25|1.25|5">1.25 × 1.25 ft — 5/box</option>
+              <option value="4|2|2">4.00 × 2.00 ft — 2/box</option>
+              <option value="2.75|5.5|2">2.75 × 5.50 ft — 2/box</option>
+              <option value="6|4|2">6.00 × 4.00 ft — 2/box</option>
+              <option value="2.75|8|1">2.75 × 8.00 ft — 1/box</option>
+            </select>
+          </div>
+          <div class="field">
+            <span class="field-label">Wastage %</span>
+            <div class="waste-row">
+              <select id="bathWasteSelect">
+                <option value="0">0%</option>
+                <option value="5">5%</option>
+                <option value="10" selected>10%</option>
+                <option value="other">Other…</option>
+              </select>
+              <input id="bathWasteOther" type="number" min="0" max="100" step="1" placeholder="%" style="display:none;width:90px">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bath results -->
+      <div class="section-label" style="margin-bottom:10px;margin-top:4px">Bathroom Results</div>
+      <div id="validationMsg" class="validation"></div>
+
+      <div class="results-card">
+        <table>
+          <thead>
+            <tr>
+              <th>Partition</th>
+              <th>Height ft</th>
+              <th>Area ft²</th>
+              <th>Tiles</th>
+              <th>Extra</th>
+              <th>Boxes</th>
+            </tr>
+          </thead>
+          <tbody id="bathBody"></tbody>
+          <tfoot>
+            <tr>
+              <td colspan="2" style="color:var(--amber)">Totals</td>
+              <td id="bathTotArea">—</td>
+              <td id="bathTotTiles">—</td>
+              <td id="bathTotExtra">—</td>
+              <td id="bathTotBoxesBuy" style="color:var(--amber)">—</td>
+            </tr>
+          </tfoot>
+        </table>
+        <div class="stat-row">
+          <div class="stat-chip"><div class="val" id="bchipArea">—</div><div class="lbl">Total Area ft²</div></div>
+          <div class="stat-chip"><div class="val" id="bchipTiles">—</div><div class="lbl">Tiles Needed</div></div>
+          <div class="stat-chip highlight"><div class="val" id="bchipBoxes">—</div><div class="lbl">Boxes to Buy</div></div>
+        </div>
+      </div>
+
+      <div class="part-cards" id="partitionSummary"></div>
+
+      <div style="display:flex;justify-content:flex-end;margin-top:16px" class="no-print">
+        <button id="bathReset" class="btn btn-ghost">Reset Bathroom</button>
+      </div>
+
+    </div><!-- /.modal-body -->
+  </div>
+</div>
+
+<!-- PRINT VIEW -->
+<div id="printView" aria-hidden="true" style="max-width:900px;margin:20px auto;font-family:serif"></div>
+
+<script>
+/* ── UTILS ───────────────────────────────────────────── */
+const $ = id => document.getElementById(id);
+const themeKey = 'tiles_theme';
+function fmt(n, d=2){
+  if (n === null || n === undefined || Number.isNaN(n)) return '—';
+  return Number(n).toLocaleString(undefined,{maximumFractionDigits:d});
+}
+function parseSelectVal(v){
+  const p = (v||'0|0|0').split('|').map(x=>parseFloat(x)||0);
+  return {w:p[0], h:p[1], ppb:p[2]};
+}
+
+/* ── THEME ───────────────────────────────────────────── */
+function setTheme(t){
+  // kept minimal — dark only for now; toggle swaps amber accent brightness
+  document.body.setAttribute('data-theme', t);
+  localStorage.setItem(themeKey, t);
+}
+(function initTheme(){
+  const saved = localStorage.getItem(themeKey) || 'dark';
+  setTheme(saved);
+  $('themeToggle').addEventListener('click', ()=>{
+    const next = document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    setTheme(next);
+    // Light mode overrides
+    if (next === 'light') {
+      document.documentElement.style.setProperty('--ink','#f6f7f9');
+      document.documentElement.style.setProperty('--ink2','#ffffff');
+      document.documentElement.style.setProperty('--ink3','#f0f1f3');
+      document.documentElement.style.setProperty('--cream','#0b1220');
+      document.documentElement.style.setProperty('--smoke','#6b7280');
+      document.documentElement.style.setProperty('--smoke2','#374151');
+      document.documentElement.style.setProperty('--border','rgba(0,0,0,0.08)');
+    } else {
+      document.documentElement.style.setProperty('--ink','#0d1117');
+      document.documentElement.style.setProperty('--ink2','#161c25');
+      document.documentElement.style.setProperty('--ink3','#1e2631');
+      document.documentElement.style.setProperty('--cream','#f5efe6');
+      document.documentElement.style.setProperty('--smoke','#8a96a8');
+      document.documentElement.style.setProperty('--smoke2','#bcc5d0');
+      document.documentElement.style.setProperty('--border','rgba(255,255,255,0.07)');
+    }
+  });
+})();
+
+/* ── SYNC TILE SELECTS ───────────────────────────────── */
+function syncWallSelectToInputs(){
+  const s = parseSelectVal($('wallTileSelect').value);
+  $('tileW').value = s.w; $('tileH').value = s.h;
+  $('tileW').dataset.ppb = s.ppb; $('tileH').dataset.ppb = s.ppb;
+}
+function syncFloorSelectToInputs(){
+  const s = parseSelectVal($('floorTileSelect').value);
+  $('floorW').value = s.w; $('floorH').value = s.h;
+  $('floorW').dataset.ppb = s.ppb; $('floorH').dataset.ppb = s.ppb;
+}
+syncWallSelectToInputs(); syncFloorSelectToInputs();
+
+/* ── WASTE SELECT HANDLERS ───────────────────────────── */
+function attachWasteHandlers(selId, othId, cb){
+  const sel=$(selId), oth=$(othId);
+  sel.addEventListener('change', ()=>{
+    oth.style.display = sel.value==='other' ? 'inline-block' : 'none';
+    if (sel.value!=='other') oth.value='';
+    if(cb) cb();
+  });
+  oth.addEventListener('input', cb||function(){});
+}
+function getWaste(selId, othId){
+  const sel=$(selId); if(!sel) return 0;
+  if(sel.value==='other'){ const v=parseFloat($(othId).value); return isFinite(v)?Math.max(0,v):0; }
+  return parseFloat(sel.value)||0;
+}
+attachWasteHandlers('wallWasteSelect','wallWasteOther', renderMain);
+attachWasteHandlers('floorWasteSelect','floorWasteOther', renderMain);
+attachWasteHandlers('bathWasteSelect','bathWasteOther', ()=>{ if(window.bathRender) window.bathRender(); });
+
+/* ── MAIN COMPUTE ────────────────────────────────────── */
+function computeMain(){
+  const L=parseFloat($('roomLen').value)||0, W=parseFloat($('roomWid').value)||0, H=parseFloat($('roomHei').value)||0;
+  const tw=Math.max(0,parseFloat($('tileW').value)||0), th=Math.max(0,parseFloat($('tileH').value)||0);
+  const ftw=Math.max(0,parseFloat($('floorW').value)||0), fth=Math.max(0,parseFloat($('floorH').value)||0);
+  const wallWaste=getWaste('wallWasteSelect','wallWasteOther');
+  const floorWaste=getWaste('floorWasteSelect','floorWasteOther');
+  const rows=[]; let totTiles=0,totExtra=0,totBoxesBuy=0;
+
+  const wallArea=2*(W*H)+2*(L*H);
+  if(tw>0&&th>0){
+    const tileArea=tw*th, tilesNeeded=Math.ceil(wallArea/tileArea);
+    const extraTiles=Math.ceil(tilesNeeded*(wallWaste/100)), finalTiles=tilesNeeded+extraTiles;
+    const ppb=parseFloat($('tileW').dataset.ppb)||null;
+    const boxesBuy=ppb?Math.ceil(finalTiles/ppb):'N/A';
+    rows.push({surface:'All Walls', area:wallArea, tileSize:`${tw}×${th}`, tilesNeeded, extraTiles, boxesBuy});
+    totTiles+=tilesNeeded; totExtra+=extraTiles; if(typeof boxesBuy==='number') totBoxesBuy+=boxesBuy;
+  } else { rows.push({surface:'All Walls', area:wallArea, tileSize:'N/A', tilesNeeded:'N/A', extraTiles:'N/A', boxesBuy:'N/A'}); }
+
+  const floorArea=L*W;
+  if(ftw>0&&fth>0){
+    const tileArea=ftw*fth, tilesNeeded=Math.ceil(floorArea/tileArea);
+    const extraTiles=Math.ceil(tilesNeeded*(floorWaste/100)), finalTiles=tilesNeeded+extraTiles;
+    const ppb=parseFloat($('floorW').dataset.ppb)||null;
+    const boxesBuy=ppb?Math.ceil(finalTiles/ppb):'N/A';
+    rows.push({surface:'Floor', area:floorArea, tileSize:`${ftw}×${fth}`, tilesNeeded, extraTiles, boxesBuy});
+    totTiles+=tilesNeeded; totExtra+=extraTiles; if(typeof boxesBuy==='number') totBoxesBuy+=boxesBuy;
+  } else { rows.push({surface:'Floor', area:floorArea, tileSize:'N/A', tilesNeeded:'N/A', extraTiles:'N/A', boxesBuy:'N/A'}); }
+
+  return {rows, totals:{totTiles, totExtra, totBoxesBuy}};
+}
+
+/* ── MAIN RENDER ─────────────────────────────────────── */
+function renderMain(){
+  syncWallSelectToInputs(); syncFloorSelectToInputs();
+  const out=computeMain();
+  $('summaryBody').innerHTML=out.rows.map(r=>`
+    <tr>
+      <td>${r.surface}</td>
+      <td class="num">${typeof r.area==='number'?fmt(r.area):r.area}</td>
+      <td>${r.tileSize}</td>
+      <td class="num">${typeof r.tilesNeeded==='number'?fmt(r.tilesNeeded,0):r.tilesNeeded}</td>
+      <td class="num">${typeof r.extraTiles==='number'?fmt(r.extraTiles,0):r.extraTiles}</td>
+      <td class="boxes">${typeof r.boxesBuy==='number'?fmt(r.boxesBuy,0):r.boxesBuy}</td>
+    </tr>`).join('');
+  $('totTiles').textContent=fmt(out.totals.totTiles,0);
+  $('totExtra').textContent=fmt(out.totals.totExtra,0);
+  $('totBoxesBuy').textContent=fmt(out.totals.totBoxesBuy,0);
+  $('chipTiles').textContent=fmt(out.totals.totTiles,0);
+  $('chipExtra').textContent=fmt(out.totals.totExtra,0);
+  $('chipBoxes').textContent=fmt(out.totals.totBoxesBuy,0);
+}
+
+/* ── BATHROOM MODULE ─────────────────────────────────── */
+(function bathroomModule(){
+  function parseTile(val){ const [w,h,ppb]=(val||'0|0|0').split('|').map(x=>parseFloat(x)||0); return{w,h,ppb}; }
+  function getMainDims(){ return{L:parseFloat($('roomLen').value)||0, W:parseFloat($('roomWid').value)||0, H:parseFloat($('roomHei').value)||0}; }
+  function getBathWaste(){ return getWaste('bathWasteSelect','bathWasteOther'); }
+
+  function updateViz(pLight,pHigh,pDark,H){
+    const total=Math.max(pLight+pHigh+pDark,0.01), scale=120/Math.max(total,H,0.01);
+    $('pvLight').style.height=Math.max(pLight*scale,4)+'px';
+    $('pvHigh').style.height=Math.max(pHigh*scale,4)+'px';
+    $('pvDark').style.height=Math.max(pDark*scale,4)+'px';
+  }
+
+  function bathCompute(){
+    const {L,W,H}=getMainDims();
+    const pLight=parseFloat($('partLightH').value)||0;
+    const pHigh=parseFloat($('partHighH').value)||0;
+    const pDark=parseFloat($('partDarkH').value)||0;
+    const sumParts=pLight+pHigh+pDark;
+    const valid=sumParts<=H+1e-9;
+    const tile=parseTile($('bathTileSelect').value);
+    const tileArea=tile.w*tile.h, wastePct=getBathWaste();
+    const parts=[{name:'Light',h:pLight},{name:'Highlight',h:pHigh},{name:'Dark',h:pDark}];
+    const rows=[]; const totals={area:0,tiles:0,extra:0,boxesBuy:0};
+    parts.forEach(part=>{
+      const h=part.h;
+      if(h<=0){ rows.push({partition:part.name, height:h, areaAll:0, tilesNeeded:'N/A', extra:'N/A', boxesBuy:'N/A'}); return; }
+      const areaAll=2*(L+W)*h;
+      if(tileArea>0){
+        const tilesNeeded=Math.ceil(areaAll/tileArea), extra=Math.ceil(tilesNeeded*(wastePct/100));
+        const final=tilesNeeded+extra, boxesBuy=tile.ppb>0?Math.ceil(final/tile.ppb):'N/A';
+        totals.area+=areaAll; totals.tiles+=tilesNeeded; totals.extra+=extra;
+        if(typeof boxesBuy==='number') totals.boxesBuy+=boxesBuy;
+        rows.push({partition:part.name, height:h, areaAll, tilesNeeded, extra, boxesBuy});
+      } else {
+        rows.push({partition:part.name, height:h, areaAll, tilesNeeded:'N/A', extra:'N/A', boxesBuy:'N/A'});
+      }
+    });
+    return{rows, totals, validation:{valid, msg:valid?'':`Partitions total ${sumParts.toFixed(2)} ft exceeds room height ${H.toFixed(2)} ft.`}};
+  }
+
+  window.bathRender=function(){
+    const out=bathCompute();
+    const vm=$('validationMsg');
+    vm.textContent=out.validation.msg;
+    vm.className='validation'+(out.validation.msg?' error':'');
+
+    $('bathBody').innerHTML=out.rows.map(r=>`<tr>
+      <td>${r.partition}</td>
+      <td class="num">${typeof r.height==='number'?fmt(r.height,2):r.height}</td>
+      <td class="num">${typeof r.areaAll==='number'?fmt(r.areaAll,2):r.areaAll}</td>
+      <td class="num">${typeof r.tilesNeeded==='number'?fmt(r.tilesNeeded,0):r.tilesNeeded}</td>
+      <td class="num">${typeof r.extra==='number'?fmt(r.extra,0):r.extra}</td>
+      <td class="boxes">${typeof r.boxesBuy==='number'?fmt(r.boxesBuy,0):r.boxesBuy}</td>
+    </tr>`).join('');
+
+    $('bathTotArea').textContent=fmt(out.totals.area,2);
+    $('bathTotTiles').textContent=fmt(out.totals.tiles,0);
+    $('bathTotExtra').textContent=fmt(out.totals.extra,0);
+    $('bathTotBoxesBuy').textContent=fmt(out.totals.boxesBuy,0);
+    $('bchipArea').textContent=fmt(out.totals.area,2);
+    $('bchipTiles').textContent=fmt(out.totals.tiles,0);
+    $('bchipBoxes').textContent=fmt(out.totals.boxesBuy,0);
+
+    const colorMap={Light:'light',Highlight:'high',Dark:'dark'};
+    $('partitionSummary').innerHTML=out.rows.map(r=>`
+      <div class="part-card">
+        <div class="part-card-name ${colorMap[r.partition]||''}">${r.partition}</div>
+        <div class="part-stat"><span class="k">Height</span><span class="v">${typeof r.height==='number'?fmt(r.height,2)+' ft':r.height}</span></div>
+        <div class="part-stat"><span class="k">Area</span><span class="v">${typeof r.areaAll==='number'?fmt(r.areaAll,2)+' ft²':r.areaAll}</span></div>
+        <div class="part-stat"><span class="k">Tiles</span><span class="v">${typeof r.tilesNeeded==='number'?fmt(r.tilesNeeded,0):r.tilesNeeded}</span></div>
+        <div class="part-stat"><span class="k">Extra</span><span class="v">${typeof r.extra==='number'?fmt(r.extra,0):r.extra}</span></div>
+        <div class="part-stat"><span class="k">Boxes</span><span class="v" style="color:var(--amber)">${typeof r.boxesBuy==='number'?fmt(r.boxesBuy,0):r.boxesBuy}</span></div>
+      </div>`).join('');
+
+    // update viz
+    const pL=parseFloat($('partLightH').value)||0, pH=parseFloat($('partHighH').value)||0, pD=parseFloat($('partDarkH').value)||0;
+    const {H}=getMainDims(); updateViz(pL,pH,pD,H);
+
+    window._bathTotals=out.totals; window._bathRows=out.rows;
+  };
+
+  ['partLightH','partHighH','partDarkH','bathTileSelect','bathWasteSelect','bathWasteOther'].forEach(id=>{
+    if($(id)) $(id).addEventListener('input', window.bathRender);
+  });
+  ['roomLen','roomWid','roomHei'].forEach(id=>{ if($(id)) $(id).addEventListener('input', window.bathRender); });
+
+  window.resetBathroom=function(){
+    $('partLightH').value='2.5'; $('partHighH').value='3.0'; $('partDarkH').value='2.5';
+    $('bathTileSelect').value='2|2|4'; $('bathWasteSelect').value='10';
+    $('bathWasteOther').value=''; $('bathWasteOther').style.display='none';
+    window.bathRender();
+  };
+  window.resetBathroom();
+})();
+
+/* ── WIRE MAIN CONTROLS ──────────────────────────────── */
+['wallTileSelect','floorTileSelect'].forEach(id=>{ if($(id)) $(id).addEventListener('input',()=>{ syncWallSelectToInputs(); syncFloorSelectToInputs(); renderMain(); }); });
+['roomLen','roomWid','roomHei','tileW','tileH','floorW','floorH'].forEach(id=>{ if($(id)) $(id).addEventListener('input',()=>{ renderMain(); if(window.bathRender) window.bathRender(); }); });
+
+$('resetBtn').addEventListener('click',()=>{
+  $('roomLen').value=''; $('roomWid').value=''; $('roomHei').value='';
+  $('wallTileSelect').value='2|2|4'; $('floorTileSelect').value='2|2|4';
+  syncWallSelectToInputs(); syncFloorSelectToInputs();
+  $('wallWasteSelect').value='10'; $('floorWasteSelect').value='0';
+  $('wallWasteOther').value=''; $('wallWasteOther').style.display='none';
+  $('floorWasteOther').value=''; $('floorWasteOther').style.display='none';
+  renderMain(); if(window.resetBathroom) window.resetBathroom();
+});
+
+/* ── MODAL ───────────────────────────────────────────── */
+$('openBathroom').addEventListener('click',()=>{ $('modalBackdrop').classList.add('open'); $('modalBackdrop').setAttribute('aria-hidden','false'); });
+$('closeModal').addEventListener('click',()=>{ $('modalBackdrop').classList.remove('open'); $('modalBackdrop').setAttribute('aria-hidden','true'); });
+window.addEventListener('keydown',e=>{ if(e.key==='Escape'){$('modalBackdrop').classList.remove('open'); $('modalBackdrop').setAttribute('aria-hidden','true');} });
+$('bathReset').addEventListener('click',()=>{ if(window.resetBathroom) window.resetBathroom(); });
+
+/* ── PRINT ───────────────────────────────────────────── */
+function buildPrintDocument(){
+  const main=computeMain();
+  const bathTotals=window._bathTotals||{area:0,tiles:0,extra:0,boxesBuy:0};
+  const bathRows=window._bathRows||[];
+  const L=$('roomLen').value||'—', W=$('roomWid').value||'—', H=$('roomHei').value||'—';
+  const wallTile=$('wallTileSelect').selectedOptions[0].textContent;
+  const floorTile=$('floorTileSelect').selectedOptions[0].textContent;
+  const bathTile=$('bathTileSelect').selectedOptions[0].textContent;
+  const bathWaste=getWaste('bathWasteSelect','bathWasteOther');
+  const doc=[];
+  doc.push(`<div style="border-bottom:2px solid #ccc;margin-bottom:16px;padding-bottom:12px"><h1 style="font-family:sans-serif;font-size:22px;margin:0">Aandavar Enterprises — Tiles Report</h1><p style="font-size:12px;color:#666;margin-top:4px">Generated: ${new Date().toLocaleString()}</p></div>`);
+  doc.push(`<h2 style="font-size:16px;font-family:sans-serif">Main Calculator &nbsp;<small style="font-weight:400;color:#666">L:${L}ft  W:${W}ft  H:${H}ft</small></h2>`);
+  doc.push(`<table style="width:100%;border-collapse:collapse;margin-bottom:16px;font-size:13px"><thead><tr style="background:#f5f5f5"><th style="text-align:left;padding:6px 10px;border:1px solid #ddd">Surface</th><th style="padding:6px 10px;border:1px solid #ddd">Area ft²</th><th style="padding:6px 10px;border:1px solid #ddd">Tile Size</th><th style="padding:6px 10px;border:1px solid #ddd">Tiles</th><th style="padding:6px 10px;border:1px solid #ddd">Extra</th><th style="padding:6px 10px;border:1px solid #ddd">Boxes</th></tr></thead><tbody>${main.rows.map(r=>`<tr><td style="padding:6px 10px;border:1px solid #ddd">${r.surface}</td><td style="text-align:center;padding:6px 10px;border:1px solid #ddd">${typeof r.area==='number'?fmt(r.area,2):r.area}</td><td style="text-align:center;padding:6px 10px;border:1px solid #ddd">${r.tileSize}</td><td style="text-align:center;padding:6px 10px;border:1px solid #ddd">${typeof r.tilesNeeded==='number'?fmt(r.tilesNeeded,0):r.tilesNeeded}</td><td style="text-align:center;padding:6px 10px;border:1px solid #ddd">${typeof r.extraTiles==='number'?fmt(r.extraTiles,0):r.extraTiles}</td><td style="text-align:center;padding:6px 10px;border:1px solid #ddd;font-weight:700">${typeof r.boxesBuy==='number'?fmt(r.boxesBuy,0):r.boxesBuy}</td></tr>`).join('')}<tr style="font-weight:700;background:#fffbee"><td colspan="3" style="padding:6px 10px;border:1px solid #ddd">Totals</td><td style="text-align:center;padding:6px 10px;border:1px solid #ddd">${fmt(main.totals.totTiles,0)}</td><td style="text-align:center;padding:6px 10px;border:1px solid #ddd">${fmt(main.totals.totExtra,0)}</td><td style="text-align:center;padding:6px 10px;border:1px solid #ddd">${fmt(main.totals.totBoxesBuy,0)}</td></tr></tbody></table>`);
+  doc.push(`<h2 style="font-size:16px;font-family:sans-serif">Bathroom Calculator &nbsp;<small style="font-weight:400;color:#666">Tile: ${bathTile} | Wastage: ${bathWaste}%</small></h2>`);
+  doc.push(`<table style="width:100%;border-collapse:collapse;margin-bottom:16px;font-size:13px"><thead><tr style="background:#f5f5f5"><th style="text-align:left;padding:6px 10px;border:1px solid #ddd">Partition</th><th style="padding:6px 10px;border:1px solid #ddd">Height ft</th><th style="padding:6px 10px;border:1px solid #ddd">Area ft²</th><th style="padding:6px 10px;border:1px solid #ddd">Tiles</th><th style="padding:6px 10px;border:1px solid #ddd">Extra</th><th style="padding:6px 10px;border:1px solid #ddd">Boxes</th></tr></thead><tbody>${bathRows.map(r=>`<tr><td style="padding:6px 10px;border:1px solid #ddd">${r.partition}</td><td style="text-align:center;padding:6px 10px;border:1px solid #ddd">${typeof r.height==='number'?fmt(r.height,2):r.height}</td><td style="text-align:center;padding:6px 10px;border:1px solid #ddd">${typeof r.areaAll==='number'?fmt(r.areaAll,2):r.areaAll}</td><td style="text-align:center;padding:6px 10px;border:1px solid #ddd">${typeof r.tilesNeeded==='number'?fmt(r.tilesNeeded,0):r.tilesNeeded}</td><td style="text-align:center;padding:6px 10px;border:1px solid #ddd">${typeof r.extra==='number'?fmt(r.extra,0):r.extra}</td><td style="text-align:center;padding:6px 10px;border:1px solid #ddd;font-weight:700">${typeof r.boxesBuy==='number'?fmt(r.boxesBuy,0):r.boxesBuy}</td></tr>`).join('')}<tr style="font-weight:700;background:#fffbee"><td colspan="2" style="padding:6px 10px;border:1px solid #ddd">Totals</td><td style="text-align:center;padding:6px 10px;border:1px solid #ddd">${fmt(bathTotals.area,2)}</td><td style="text-align:center;padding:6px 10px;border:1px solid #ddd">${fmt(bathTotals.tiles,0)}</td><td style="text-align:center;padding:6px 10px;border:1px solid #ddd">${fmt(bathTotals.extra,0)}</td><td style="text-align:center;padding:6px 10px;border:1px solid #ddd">${fmt(bathTotals.boxesBuy,0)}</td></tr></tbody></table>`);
+  return doc.join('');
+}
+
+$('savePdfBtn').addEventListener('click',()=>{
+  renderMain(); if(window.bathRender) window.bathRender();
+  $('printView').innerHTML=buildPrintDocument();
+  setTimeout(()=>{ window.print(); setTimeout(()=>{ $('printView').innerHTML=''; },500); }, 200);
+});
+
+/* ── INIT ────────────────────────────────────────────── */
+renderMain();
+if(window.bathRender) window.bathRender();
+</script>
+</body>
+</html>

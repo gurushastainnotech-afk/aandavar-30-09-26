@@ -1,0 +1,1803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Aandavar Enterprises — Tiles Calculator + 3D Visualizer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+/* ── TOKENS ─────────────────────────────────────────── */
+:root {
+  --ink:    #0d1117;
+  --ink2:   #161c25;
+  --ink3:   #1e2631;
+  --border: rgba(255,255,255,0.07);
+  --amber:  #f5a623;
+  --amber2: #ffc85a;
+  --cream:  #f5efe6;
+  --smoke:  #8a96a8;
+  --smoke2: #bcc5d0;
+  --red:    #e05252;
+  --green:  #4caf7d;
+  --font-head: 'Syne', sans-serif;
+  --font-mono: 'DM Mono', monospace;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  background: var(--ink);
+  color: var(--cream);
+  font-family: var(--font-head);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 0;
+  background-image:
+    linear-gradient(rgba(245,166,35,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(245,166,35,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+}
+
+/* ── LAYOUT ─────────────────────────────────────────── */
+.page { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 24px 20px 80px; }
+
+/* ── TOPBAR ─────────────────────────────────────────── */
+.topbar {
+  display: flex; align-items: center; gap: 16px;
+  margin-bottom: 36px; padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
+.logo-mark {
+  width: 42px; height: 42px; background: var(--amber);
+  clip-path: polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; font-size: 13px; font-weight: 800; color: var(--ink);
+}
+.brand { flex: 1; }
+.brand-name { font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--amber); font-family: var(--font-mono); }
+.brand-title { font-size: 20px; font-weight: 800; line-height: 1.1; color: var(--cream); letter-spacing: -0.02em; }
+.topbar-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+/* ── BUTTONS ─────────────────────────────────────────── */
+.btn {
+  font-family: var(--font-head); font-size: 12px; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  padding: 8px 14px; border-radius: 6px; cursor: pointer;
+  border: 1px solid var(--border); transition: all 0.18s ease;
+  background: var(--ink3); color: var(--smoke2);
+}
+.btn:hover { border-color: var(--amber); color: var(--amber); }
+.btn-primary { background: var(--amber); color: var(--ink); border-color: var(--amber); }
+.btn-primary:hover { background: var(--amber2); border-color: var(--amber2); color: var(--ink); }
+.btn-ghost { background: transparent; color: var(--smoke); border: 1px solid var(--border); }
+.btn-ghost:hover { color: var(--red); border-color: var(--red); }
+
+/* ── TABS ────────────────────────────────────────────── */
+.main-tabs { display: flex; gap: 4px; margin-bottom: 24px; border-bottom: 1px solid var(--border); padding-bottom: 0; }
+.main-tab {
+  font-family: var(--font-head); font-size: 13px; font-weight: 700;
+  padding: 10px 20px; cursor: pointer; border: none; background: transparent;
+  color: var(--smoke); border-bottom: 2px solid transparent; margin-bottom: -1px;
+  letter-spacing: 0.05em; text-transform: uppercase; transition: all 0.18s;
+}
+.main-tab:hover { color: var(--cream); }
+.main-tab.active { color: var(--amber); border-bottom-color: var(--amber); }
+
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* ── SECTION LABEL ──────────────────────────────────── */
+.section-label {
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.2em;
+  text-transform: uppercase; color: var(--amber); margin-bottom: 10px;
+  display: flex; align-items: center; gap: 8px;
+}
+.section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+/* ── CARD ────────────────────────────────────────────── */
+.card {
+  background: var(--ink2); border: 1px solid var(--border); border-radius: 10px;
+  padding: 20px 22px; margin-bottom: 14px; position: relative; overflow: hidden; transition: border-color 0.2s;
+}
+.card:hover { border-color: rgba(245,166,35,0.2); }
+.card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, var(--amber) 0%, transparent 60%);
+  opacity: 0; transition: opacity 0.2s;
+}
+.card:hover::before { opacity: 1; }
+
+/* ── FORM ────────────────────────────────────────────── */
+.form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px,1fr)); gap: 12px; align-items: end; }
+.form-row.cols-2 { grid-template-columns: 1fr 1fr; }
+.form-row.cols-3 { grid-template-columns: repeat(3,1fr); }
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field-label { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--smoke); }
+.field input[type="number"], .field select, .field input[type="text"] {
+  background: var(--ink); color: var(--cream); border: 1px solid var(--border);
+  border-radius: 6px; padding: 9px 12px; font-family: var(--font-mono); font-size: 13px;
+  outline: none; transition: border-color 0.18s, box-shadow 0.18s; width: 100%;
+  appearance: none; -webkit-appearance: none;
+}
+.field input::placeholder { color: rgba(138,150,168,0.4); }
+.field input:focus, .field select:focus { border-color: var(--amber); box-shadow: 0 0 0 3px rgba(245,166,35,0.12); }
+.field select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238a96a8' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 10px center; padding-right: 30px;
+}
+.waste-row { display: flex; gap: 8px; align-items: center; }
+.waste-row select { flex: 1; }
+.waste-row input[type="number"] { width: 90px; }
+
+/* ── DIM INPUTS ──────────────────────────────────────── */
+.dim-input-group { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
+.dim-field { position: relative; }
+.dim-field input {
+  background: var(--ink); color: var(--cream); border: 1px solid var(--border);
+  border-radius: 8px; padding: 14px 12px 8px; font-family: var(--font-mono);
+  font-size: 18px; font-weight: 500; width: 100%; outline: none;
+  transition: border-color 0.18s, box-shadow 0.18s; appearance: none;
+}
+.dim-field input:focus { border-color: var(--amber); box-shadow: 0 0 0 3px rgba(245,166,35,0.12); }
+.dim-field input::placeholder { color: rgba(138,150,168,0.3); font-size: 14px; }
+.dim-field-label { position: absolute; top: 7px; left: 12px; font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--amber); pointer-events: none; }
+.dim-unit { position: absolute; bottom: 10px; right: 12px; font-family: var(--font-mono); font-size: 10px; color: var(--smoke); pointer-events: none; }
+
+/* ── RESULTS ─────────────────────────────────────────── */
+.results-card { background: var(--ink2); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin-bottom: 14px; }
+.results-header { padding: 14px 22px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.results-header .title { font-size: 13px; font-weight: 700; color: var(--cream); }
+table { width: 100%; border-collapse: collapse; }
+thead tr { background: rgba(245,166,35,0.06); }
+th { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--amber); padding: 11px 14px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+td { padding: 12px 14px; font-family: var(--font-mono); font-size: 13px; color: var(--smoke2); border-bottom: 1px solid rgba(255,255,255,0.04); transition: background 0.15s; }
+tbody tr:hover td { background: rgba(245,166,35,0.04); }
+tbody tr:last-child td { border-bottom: none; }
+td:first-child { color: var(--cream); font-weight: 500; }
+td.num { color: var(--cream); }
+td.boxes { color: var(--amber); font-weight: 500; }
+tfoot tr { background: rgba(245,166,35,0.08); }
+tfoot td { font-weight: 700; color: var(--amber); border-top: 1px solid rgba(245,166,35,0.2); font-size: 13px; }
+
+/* ── STAT CHIPS ──────────────────────────────────────── */
+.stat-row { display: flex; gap: 10px; flex-wrap: wrap; padding: 16px 22px; border-top: 1px solid var(--border); }
+.stat-chip { flex: 1; min-width: 120px; background: var(--ink3); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; text-align: center; transition: border-color 0.2s, transform 0.2s; }
+.stat-chip:hover { border-color: rgba(245,166,35,0.3); transform: translateY(-1px); }
+.stat-chip .val { font-family: var(--font-mono); font-size: 22px; font-weight: 500; color: var(--cream); line-height: 1; }
+.stat-chip .lbl { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--smoke); margin-top: 4px; }
+.stat-chip.highlight .val { color: var(--amber); }
+
+/* ── VALIDATION ──────────────────────────────────────── */
+.validation { font-family: var(--font-mono); font-size: 11px; border-radius: 6px; padding: 8px 12px; margin-bottom: 12px; display: none; }
+.validation.error { background: rgba(224,82,82,0.12); color: var(--red); border: 1px solid rgba(224,82,82,0.3); display: block; }
+
+/* ── PARTITION VIZ ───────────────────────────────────── */
+.partition-viz { display: flex; flex-direction: column; gap: 4px; width: 40px; flex-shrink: 0; }
+.pv-seg { border-radius: 3px; transition: height 0.3s ease; min-height: 6px; display: flex; align-items: center; justify-content: center; font-size: 8px; font-weight: 700; color: rgba(0,0,0,0.5); }
+.pv-light { background: #e8d5c0; }
+.pv-high  { background: var(--amber); }
+.pv-dark  { background: #5c4a35; }
+
+/* ── PART CARDS ──────────────────────────────────────── */
+.part-cards { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-top: 14px; }
+.part-card { background: var(--ink3); border: 1px solid var(--border); border-radius: 8px; padding: 14px; transition: border-color 0.2s; }
+.part-card:hover { border-color: rgba(245,166,35,0.25); }
+.part-card-name { font-size: 12px; font-weight: 700; letter-spacing: 0.05em; margin-bottom: 10px; }
+.part-card-name.light { color: #e8d5c0; }
+.part-card-name.high  { color: var(--amber); }
+.part-card-name.dark  { color: #b09070; }
+.part-stat { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
+.part-stat .k { font-family: var(--font-mono); font-size: 10px; color: var(--smoke); }
+.part-stat .v { font-family: var(--font-mono); font-size: 12px; color: var(--cream); }
+
+/* ── FOOTNOTE ────────────────────────────────────────── */
+.footnote { font-family: var(--font-mono); font-size: 11px; color: var(--smoke); text-align: center; margin-top: 6px; padding: 0 8px; line-height: 1.6; }
+
+/* ── MODAL ───────────────────────────────────────────── */
+.modal-backdrop { position: fixed; inset: 0; z-index: 1100; background: rgba(0,0,0,0.7); backdrop-filter: blur(6px); display: none; align-items: center; justify-content: center; padding: 16px; }
+.modal-backdrop.open { display: flex; }
+.modal { background: var(--ink2); border: 1px solid var(--border); border-radius: 14px; width: min(960px,100%); max-height: 92vh; overflow: auto; position: relative; animation: modal-in 0.25s cubic-bezier(0.34,1.4,0.64,1) both; }
+@keyframes modal-in { from { opacity:0; transform: scale(0.93) translateY(16px); } to { opacity:1; transform: scale(1) translateY(0); } }
+.modal-header { padding: 18px 22px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; position: sticky; top: 0; background: var(--ink2); z-index: 10; }
+.modal-title { font-size: 16px; font-weight: 800; flex: 1; }
+.modal-body { padding: 20px 22px; }
+
+/* ── FAB ─────────────────────────────────────────────── */
+.fab-wrap { position: fixed; bottom: 28px; right: 24px; z-index: 900; }
+.fab { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 68px; height: 68px; border-radius: 50%; background: var(--amber); color: var(--ink); font-family: var(--font-head); font-size: 11px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; border: none; cursor: pointer; box-shadow: 0 8px 32px rgba(245,166,35,0.4); transition: transform 0.2s, box-shadow 0.2s; }
+.fab:hover { transform: translateY(-2px) scale(1.04); box-shadow: 0 12px 40px rgba(245,166,35,0.55); }
+.fab svg { margin-bottom: 2px; }
+
+/* ── 3D VISUALIZER PANEL ─────────────────────────────── */
+#visuPanel {
+  display: flex;
+  gap: 0;
+  height: calc(100vh - 160px);
+  min-height: 600px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+#viewer3d {
+  flex: 1 1 66%;
+  position: relative;
+  overflow: hidden;
+  background: #16213e;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: grab;
+}
+#viewer3d:active { cursor: grabbing; }
+#viewer3d.draw-mode { cursor: crosshair; }
+#viewer3d.erase-mode { cursor: cell; }
+#viewer3d.span-mode { cursor: crosshair; }
+
+#screenshotBtn3d {
+  position: absolute; top: 12px; right: 12px; z-index: 100;
+  padding: 7px 14px; background: rgba(15,23,42,0.85); border: 1px solid #334155;
+  border-radius: 6px; color: #94a3b8; cursor: pointer; font-size: 12px; font-family: var(--font-mono);
+  backdrop-filter: blur(4px); transition: all .15s;
+}
+#screenshotBtn3d:hover { background: #f5a623; color: #000; border-color: #f5a623; }
+
+/* Room upload buttons */
+.room-upload-bar {
+  position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%);
+  z-index: 100; display: flex; gap: 6px; flex-wrap: nowrap;
+}
+.room-upload-btn {
+  padding: 5px 11px; background: rgba(15,23,42,0.9); border: 1px solid #334155;
+  border-radius: 5px; color: #94a3b8; cursor: pointer; font-size: 11px; font-family: var(--font-mono);
+  backdrop-filter: blur(4px); transition: all .15s; white-space: nowrap;
+}
+.room-upload-btn:hover { background: rgba(245,166,35,0.2); border-color: #f5a623; color: #f5a623; }
+.room-upload-btn.active-room { background: rgba(245,166,35,0.25); border-color: #f5a623; color: #f5a623; font-weight: 700; }
+
+.scene-wrap { transform-origin: center center; will-change: transform; }
+.scene { perspective: 2600px; display: flex; justify-content: center; align-items: center; width: 560px; height: 480px; }
+.room3d { position: relative; transform-style: preserve-3d; }
+.surf3d { position: absolute; top: 0; left: 0; display: grid; transform-style: preserve-3d; transform-origin: 0 0 0; }
+.cell3d { background: #fff; background-size: cover; background-position: center; cursor: inherit; transition: filter .08s; position: relative; }
+.cell3d:hover { filter: brightness(0.85); }
+.cell3d.sel-cell { outline: 2px solid #f59e0b; outline-offset: -2px; background-color: rgba(245,158,11,0.18)!important; }
+.hl-surf3d { box-shadow: inset 0 0 0 3px #f59e0b; }
+.span-img3d { position: absolute; pointer-events: none; background-size: cover; background-position: center; z-index: 10; }
+
+/* 3D Side Panel */
+#visu3dPanel {
+  flex: 0 0 280px;
+  background: var(--ink2);
+  border-left: 1px solid var(--border);
+  overflow-y: auto;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.vsec { background: var(--ink3); border: 1px solid var(--border); border-radius: 8px; padding: 10px; }
+.vsec h3 { font-size: 10px; font-weight: 700; color: var(--smoke); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 8px; font-family: var(--font-mono); }
+.vrow { display: flex; align-items: center; gap: 5px; margin-bottom: 4px; flex-wrap: wrap; }
+.vlbl { font-size: 11px; color: var(--smoke); min-width: 56px; font-family: var(--font-mono); }
+input[type=range] { flex: 1; accent-color: #3b82f6; }
+.vval { font-size: 11px; color: #60a5fa; min-width: 32px; text-align: right; font-family: var(--font-mono); }
+
+.vbtn { padding: 5px 9px; border: 1px solid var(--border); border-radius: 5px; background: var(--ink2); color: var(--smoke); cursor: pointer; font-size: 11px; margin: 2px 2px 0 0; transition: all .15s; font-family: var(--font-mono); }
+.vbtn:hover { background: #1d4ed8; color: #fff; border-color: #1d4ed8; }
+.vbtn.primary { background: #1d4ed8; color: #fff; border-color: #1d4ed8; }
+.vbtn.warn { background: #6d28d9; color: #fff; border-color: #6d28d9; }
+.vbtn.danger { background: #991b1b; color: #fff; border-color: #991b1b; }
+.vbtn.sm { padding: 3px 7px; font-size: 10px; }
+
+.tool-row { display: flex; gap: 4px; margin-bottom: 6px; flex-wrap: wrap; }
+.tool-btn { flex: 1; padding: 6px 3px; border: 1px solid var(--border); border-radius: 5px; background: var(--ink2); color: var(--smoke); cursor: pointer; font-size: 11px; text-align: center; transition: all .15s; min-width: 50px; font-family: var(--font-mono); }
+.tool-btn:hover { background: #1d4ed8; color: #fff; border-color: #1d4ed8; }
+.tool-btn.active { background: #0e7490; color: #fff; border-color: #0e7490; }
+
+.surf-tabs { display: flex; gap: 3px; flex-wrap: wrap; margin-bottom: 8px; }
+.surf-tab { padding: 4px 9px; border: 1px solid var(--border); border-radius: 4px; background: var(--ink2); color: var(--smoke); cursor: pointer; font-size: 11px; transition: all .15s; font-family: var(--font-mono); }
+.surf-tab:hover { background: #1d4ed8; color: #fff; border-color: #1d4ed8; }
+.surf-tab.active { background: #f59e0b; color: #000; border-color: #f59e0b; font-weight: 600; }
+
+.adj-row { display: flex; align-items: center; gap: 5px; margin-bottom: 5px; }
+.adj-lbl { font-size: 10px; color: var(--smoke); min-width: 48px; font-family: var(--font-mono); }
+.adj-btns { display: flex; gap: 3px; }
+.adj-btns button { width: 28px; height: 24px; border: 1px solid var(--border); border-radius: 4px; background: var(--ink2); color: var(--smoke); cursor: pointer; font-size: 13px; line-height: 1; transition: all .12s; }
+.adj-btns button:hover { background: #1d4ed8; color: #fff; border-color: #1d4ed8; }
+.adj-btns button:disabled { background: var(--ink); color: #374151; cursor: not-allowed; border-color: var(--border); }
+.adj-val { font-size: 10px; color: #60a5fa; min-width: 42px; text-align: center; background: var(--ink); border-radius: 3px; padding: 2px 4px; border: 1px solid #1e3a5f; font-family: var(--font-mono); }
+
+.lock-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; padding: 6px 8px; background: var(--ink); border-radius: 6px; border: 1px solid #1e3a5f; }
+.lock-bar span { font-size: 11px; color: var(--smoke); font-family: var(--font-mono); }
+.lock-btn { padding: 4px 10px; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600; transition: all .15s; }
+.lock-btn.unlocked { background: #065f46; color: #6ee7b7; }
+.lock-btn.unlocked:hover { background: #047857; }
+.lock-btn.locked { background: #7f1d1d; color: #fca5a5; }
+.lock-btn.locked:hover { background: #991b1b; }
+
+.vvr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; }
+.vvr span { font-size: 11px; color: var(--smoke); font-family: var(--font-mono); }
+.vtog { display: flex; align-items: center; gap: 5px; cursor: pointer; }
+.vtog input { display: none; }
+.vtog-tr { width: 30px; height: 16px; background: #334155; border-radius: 8px; position: relative; transition: .2s; }
+.vtog-th { width: 12px; height: 12px; background: #64748b; border-radius: 50%; position: absolute; top: 2px; left: 2px; transition: .2s; }
+.vtog input:checked~.vtog-tr { background: #0e7490; }
+.vtog input:checked~.vtog-tr .vtog-th { left: 16px; background: #38bdf8; }
+.vtog-tx { font-size: 10px; color: var(--smoke); min-width: 20px; font-family: var(--font-mono); }
+
+#visuLogoSlot {
+  width: 100%; height: 60px; border: 2px dashed var(--border); border-radius: 8px;
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+  position: relative; overflow: hidden; background: var(--ink); margin-bottom: 8px; transition: border-color .2s;
+}
+#visuLogoSlot:hover { border-color: #3b82f6; }
+#visuLogoSlot img { width: 100%; height: 100%; object-fit: contain; }
+#visuLogoSlot .placeholder { font-size: 10px; color: var(--smoke); text-align: center; pointer-events: none; font-family: var(--font-mono); }
+
+#visuCarousel { display: flex; gap: 5px; overflow-x: auto; padding: 3px 0; scrollbar-width: thin; }
+#visuCarousel img { height: 48px; min-width: 48px; object-fit: cover; border-radius: 4px; cursor: pointer; border: 2px solid transparent; }
+#visuCarousel img.sel { border-color: #38bdf8; }
+#visuStatus { font-size: 11px; color: #60a5fa; padding: 3px 0; min-height: 14px; font-family: var(--font-mono); }
+
+/* Print view */
+#printView { display: none; }
+.hidden-inputs { display: none; }
+
+/* Calc summary chip for visu sync */
+.calc-sync-banner {
+  background: rgba(245,166,35,0.08); border: 1px solid rgba(245,166,35,0.25);
+  border-radius: 8px; padding: 10px 14px; margin-bottom: 12px;
+  font-family: var(--font-mono); font-size: 11px; color: var(--amber);
+  display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+}
+.calc-sync-banner span { color: var(--smoke); }
+.calc-sync-banner strong { color: var(--cream); }
+
+/* Room selector row */
+.room-selector-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; }
+.room-card-btn {
+  flex: 1; min-width: 120px; background: var(--ink3); border: 1px solid var(--border);
+  border-radius: 8px; padding: 10px 14px; cursor: pointer; text-align: center;
+  transition: all 0.2s; font-family: var(--font-head);
+}
+.room-card-btn:hover { border-color: var(--amber); }
+.room-card-btn.active { border-color: var(--amber); background: rgba(245,166,35,0.1); }
+.room-card-btn .rname { font-size: 13px; font-weight: 700; color: var(--cream); margin-bottom: 3px; }
+.room-card-btn .rtype { font-family: var(--font-mono); font-size: 10px; color: var(--smoke); text-transform: uppercase; letter-spacing: 0.1em; }
+.room-card-btn .rthumb { width: 100%; height: 40px; border-radius: 4px; object-fit: cover; margin-bottom: 4px; display: none; }
+.room-card-btn .rthumb.has-img { display: block; }
+.room-card-btn .rupload { font-family: var(--font-mono); font-size: 9px; color: var(--amber); margin-top: 4px; }
+
+@media print {
+  body { background: #fff; color: #000; }
+  .topbar, .main-tabs, .fab-wrap, .no-print, #visuPanel { display: none !important; }
+  #printView { display: block; }
+  .page { padding: 0; }
+  table { border: 1px solid #333; }
+  th, td { border: 1px solid #ccc; }
+}
+@media (max-width: 600px) {
+  .dim-input-group { grid-template-columns: 1fr 1fr; }
+  .dim-input-group .dim-field:nth-child(3) { grid-column: span 2; }
+  .part-cards { grid-template-columns: 1fr; }
+  .form-row.cols-3 { grid-template-columns: 1fr 1fr; }
+  .topbar { flex-wrap: wrap; }
+  .brand-title { font-size: 16px; }
+  #visuPanel { flex-direction: column; height: auto; }
+  #visu3dPanel { flex: none; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- TOP BAR -->
+  <div class="topbar no-print">
+    <div class="logo-mark">AE</div>
+    <div class="brand">
+      <div class="brand-name">Aandavar Enterprises</div>
+      <div class="brand-title">Tiles Calculator + 3D Visualizer</div>
+    </div>
+    <div class="topbar-actions">
+      <button id="themeToggle" class="btn">☀ / ☾</button>
+      <button id="savePdfBtn" class="btn btn-primary">↓ PDF</button>
+    </div>
+  </div>
+
+  <!-- MAIN TABS -->
+  <div class="main-tabs no-print">
+    <button class="main-tab active" onclick="switchTab('calc')">📐 Calculator</button>
+    <button class="main-tab" onclick="switchTab('visu')">🧊 3D Visualizer</button>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!--  TAB 1: CALCULATOR                                  -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <div class="tab-panel active" id="tab-calc">
+
+    <!-- ROOM DIMENSIONS -->
+    <div class="section-label">Room Dimensions</div>
+    <div class="card">
+      <div class="dim-input-group">
+        <div class="dim-field">
+          <span class="dim-field-label">Length</span>
+          <input id="roomLen" type="number" step="0.01" placeholder="0.00">
+          <span class="dim-unit">ft</span>
+        </div>
+        <div class="dim-field">
+          <span class="dim-field-label">Width</span>
+          <input id="roomWid" type="number" step="0.01" placeholder="0.00">
+          <span class="dim-unit">ft</span>
+        </div>
+        <div class="dim-field">
+          <span class="dim-field-label">Height</span>
+          <input id="roomHei" type="number" step="0.01" placeholder="0.00">
+          <span class="dim-unit">ft</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- WALL TILE -->
+    <div class="section-label">Wall Tiles</div>
+    <div class="card">
+      <div class="form-row cols-2">
+        <div class="field">
+          <span class="field-label">Tile Size</span>
+          <select id="wallTileSelect">
+            <option value="1.5|1|6">1.50 × 1.00 ft — 6/box</option>
+            <option value="1|1|8">1.00 × 1.00 ft — 8/box</option>
+            <option value="2|1|5">2.00 × 1.00 ft — 5/box</option>
+            <option value="2|2|4">2.00 × 2.00 ft — 4/box</option>
+            <option value="1.25|1.25|5">1.25 × 1.25 ft — 5/box</option>
+            <option value="4|2|2">4.00 × 2.00 ft — 2/box</option>
+            <option value="2.75|5.5|2">2.75 × 5.50 ft — 2/box</option>
+            <option value="6|4|2">6.00 × 4.00 ft — 2/box</option>
+            <option value="2.75|8|1">2.75 × 8.00 ft — 1/box</option>
+          </select>
+        </div>
+        <div class="field">
+          <span class="field-label">Wastage %</span>
+          <div class="waste-row">
+            <select id="wallWasteSelect">
+              <option value="0">0%</option>
+              <option value="5">5%</option>
+              <option value="10" selected>10%</option>
+              <option value="other">Other…</option>
+            </select>
+            <input id="wallWasteOther" type="number" min="0" max="100" step="1" placeholder="%" style="display:none;width:90px">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FLOOR TILE -->
+    <div class="section-label">Floor Tiles</div>
+    <div class="card">
+      <div class="form-row cols-2">
+        <div class="field">
+          <span class="field-label">Tile Size</span>
+          <select id="floorTileSelect">
+            <option value="1.5|1|6">1.50 × 1.00 ft — 6/box</option>
+            <option value="1|1|8">1.00 × 1.00 ft — 8/box</option>
+            <option value="2|1|5">2.00 × 1.00 ft — 5/box</option>
+            <option value="2|2|4">2.00 × 2.00 ft — 4/box</option>
+            <option value="1.25|1.25|5">1.25 × 1.25 ft — 5/box</option>
+            <option value="4|2|2">4.00 × 2.00 ft — 2/box</option>
+            <option value="2.75|5.5|2">2.75 × 5.50 ft — 2/box</option>
+            <option value="6|4|2">6.00 × 4.00 ft — 2/box</option>
+            <option value="2.75|8|1">2.75 × 8.00 ft — 1/box</option>
+          </select>
+        </div>
+        <div class="field">
+          <span class="field-label">Wastage %</span>
+          <div class="waste-row">
+            <select id="floorWasteSelect">
+              <option value="0">0%</option>
+              <option value="5">5%</option>
+              <option value="10">10%</option>
+              <option value="other">Other…</option>
+            </select>
+            <input id="floorWasteOther" type="number" min="0" max="100" step="1" placeholder="%" style="display:none;width:90px">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN RESULTS -->
+    <div class="section-label">Results</div>
+    <div class="results-card">
+      <div class="results-header">
+        <span class="title">Surface Breakdown</span>
+        <button id="resetBtn" class="btn btn-ghost no-print">Reset</button>
+      </div>
+      <table>
+        <thead>
+          <tr><th>Surface</th><th>Area ft²</th><th>Tile Size</th><th>Tiles</th><th>Extra</th><th>Boxes</th></tr>
+        </thead>
+        <tbody id="summaryBody"></tbody>
+        <tfoot>
+          <tr>
+            <td colspan="3" style="color:var(--amber)">Totals</td>
+            <td id="totTiles">—</td><td id="totExtra">—</td><td id="totBoxesBuy" style="color:var(--amber)">—</td>
+          </tr>
+        </tfoot>
+      </table>
+      <div class="stat-row" id="mainStats">
+        <div class="stat-chip"><div class="val" id="chipTiles">—</div><div class="lbl">Tiles Needed</div></div>
+        <div class="stat-chip"><div class="val" id="chipExtra">—</div><div class="lbl">Extra (wastage)</div></div>
+        <div class="stat-chip highlight"><div class="val" id="chipBoxes">—</div><div class="lbl">Boxes to Buy</div></div>
+      </div>
+    </div>
+
+    <p class="footnote no-print">Full-grid coverage assumed. Deduct area for doors, windows &amp; fixtures.</p>
+  </div><!-- /tab-calc -->
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!--  TAB 2: 3D VISUALIZER                               -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <div class="tab-panel" id="tab-visu">
+
+    <!-- Room selector + image uploader -->
+    <div class="section-label">Select Room for Visualization</div>
+    <div class="room-selector-row" id="roomSelectorRow">
+      <div class="room-card-btn active" id="rcMain" onclick="selectRoom('main',this)">
+        <img class="rthumb" id="rthumb-main" src="" alt="">
+        <div class="rname">Main Room</div>
+        <div class="rtype">Standard</div>
+        <div class="rupload" onclick="event.stopPropagation();document.getElementById('rupload-main').click()">+ Upload image</div>
+        <input type="file" id="rupload-main" accept="image/*" style="display:none" onchange="setRoomBg('main',event)">
+      </div>
+      <div class="room-card-btn" id="rcBath" onclick="selectRoom('bath',this)">
+        <img class="rthumb" id="rthumb-bath" src="" alt="">
+        <div class="rname">Bathroom</div>
+        <div class="rtype">Wet Area</div>
+        <div class="rupload" onclick="event.stopPropagation();document.getElementById('rupload-bath').click()">+ Upload image</div>
+        <input type="file" id="rupload-bath" accept="image/*" style="display:none" onchange="setRoomBg('bath',event)">
+      </div>
+    </div>
+
+    <!-- Calc sync banner -->
+    <div class="calc-sync-banner" id="calcSyncBanner">
+      <span>📐 Synced from calculator —</span>
+      <span>L: <strong id="syncL">—</strong> ft</span>
+      <span>W: <strong id="syncW">—</strong> ft</span>
+      <span>H: <strong id="syncH">—</strong> ft</span>
+      <span style="margin-left:auto;font-size:10px;color:var(--smoke)">3D grid auto-scaled</span>
+    </div>
+
+    <!-- 3D VIEWER + PANEL -->
+    <div id="visuPanel">
+
+      <!-- LEFT: 3D Canvas -->
+      <div id="viewer3d">
+        <button id="screenshotBtn3d" onclick="takeScreenshot3d()">📷 Screenshot</button>
+
+        <!-- Room image upload bar (floating inside canvas) -->
+        <div class="room-upload-bar" id="roomUploadBar">
+          <label class="room-upload-btn" id="rub-main" title="Set as Main Room">
+            🏠 Main Bg
+            <input type="file" accept="image/*" style="display:none" onchange="setViewerBg(event)">
+          </label>
+        </div>
+
+        <div class="scene-wrap" id="sceneWrap3d">
+          <div class="scene">
+            <div class="room3d" id="room3d"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Controls Panel -->
+      <div id="visu3dPanel">
+
+        <!-- TOOLS -->
+        <div class="vsec">
+          <h3>Tools</h3>
+          <div class="tool-row">
+            <button class="tool-btn active" id="t3Orbit" onclick="set3dTool('orbit')">⟳ Orbit</button>
+            <button class="tool-btn" id="t3Draw"  onclick="set3dTool('draw')">✏ Draw</button>
+            <button class="tool-btn" id="t3Span"  onclick="set3dTool('span')">⊞ Span</button>
+            <button class="tool-btn" id="t3Erase" onclick="set3dTool('erase')">✕ Erase</button>
+          </div>
+          <div id="visu3dStatus" style="font-size:11px;color:#60a5fa;padding:3px 0;min-height:14px;font-family:var(--font-mono)">Orbit — drag to rotate</div>
+          <div id="spanInfo3d" style="display:none;font-size:10px;color:#f59e0b;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:5px;padding:6px 8px;margin-top:4px;line-height:1.5">
+            <b>Span:</b> Drag cells to fit one image as a panel.
+          </div>
+        </div>
+
+        <!-- VIEW -->
+        <div class="vsec">
+          <h3>View</h3>
+          <div class="vrow">
+            <span class="vlbl">Zoom</span>
+            <input type="range" id="v3zoomR" min="30" max="180" step="1" value="85">
+            <span class="vval" id="v3zoomV">85%</span>
+          </div>
+          <div class="vrow">
+            <span class="vlbl">Rotate</span>
+            <input type="range" id="v3rotR" min="-135" max="135" step="1" value="32">
+            <span class="vval" id="v3rotV">32°</span>
+          </div>
+          <div class="vrow">
+            <span class="vlbl">Tilt</span>
+            <input type="range" id="v3tiltR" min="-60" max="0" step="1" value="-25">
+            <span class="vval" id="v3tiltV">-25°</span>
+          </div>
+          <button class="vbtn sm" onclick="resetView3d()">Reset view</button>
+        </div>
+
+        <!-- ADJUST SURFACE -->
+        <div class="vsec">
+          <h3>Adjust Surface</h3>
+          <div class="lock-bar">
+            <span id="lockLabel3d">Adjustments: Unlocked</span>
+            <button class="lock-btn unlocked" id="lockBtn3d" onclick="toggleLock3d()">🔓 Unlock</button>
+          </div>
+          <div class="surf-tabs">
+            <button class="surf-tab active" onclick="selectAdjSurf3d('back',this)">Back</button>
+            <button class="surf-tab" onclick="selectAdjSurf3d('left',this)">Left</button>
+            <button class="surf-tab" onclick="selectAdjSurf3d('right',this)">Right</button>
+            <button class="surf-tab" onclick="selectAdjSurf3d('floor',this)">Floor</button>
+          </div>
+          <div class="adj-row"><span class="adj-lbl">Move X</span><div class="adj-btns"><button id="adj3-tx-m" onclick="nudge3d('tx',-5)">←</button><button id="adj3-tx-p" onclick="nudge3d('tx', 5)">→</button></div><span class="adj-val" id="av3-tx">0px</span></div>
+          <div class="adj-row"><span class="adj-lbl">Move Y</span><div class="adj-btns"><button id="adj3-ty-m" onclick="nudge3d('ty',-5)">↑</button><button id="adj3-ty-p" onclick="nudge3d('ty', 5)">↓</button></div><span class="adj-val" id="av3-ty">0px</span></div>
+          <div class="adj-row"><span class="adj-lbl">Move Z</span><div class="adj-btns"><button id="adj3-tz-m" onclick="nudge3d('tz',-5)">↙</button><button id="adj3-tz-p" onclick="nudge3d('tz', 5)">↗</button></div><span class="adj-val" id="av3-tz">0px</span></div>
+          <div class="adj-row"><span class="adj-lbl">Rot X</span><div class="adj-btns"><button id="adj3-rx-m" onclick="nudge3d('rx',-5)">-5°</button><button id="adj3-rx-p" onclick="nudge3d('rx', 5)">+5°</button></div><span class="adj-val" id="av3-rx">0°</span></div>
+          <div class="adj-row"><span class="adj-lbl">Rot Y</span><div class="adj-btns"><button id="adj3-ry-m" onclick="nudge3d('ry',-5)">-5°</button><button id="adj3-ry-p" onclick="nudge3d('ry', 5)">+5°</button></div><span class="adj-val" id="av3-ry">0°</span></div>
+          <div style="display:flex;gap:4px;margin-top:6px">
+            <button class="vbtn sm" id="resetSurf3dBtn" onclick="resetSurf3d()">Reset surf</button>
+            <button class="vbtn sm" id="resetAll3dBtn" onclick="resetAllSurfs3d()">Reset all</button>
+          </div>
+        </div>
+
+        <!-- TILE GRID -->
+        <div class="vsec">
+          <h3>Tile Grid</h3>
+          <div class="vrow"><span class="vlbl">Wall rows</span><input type="number" id="v3wR" value="4" min="1" max="20" style="width:52px;height:25px;text-align:center;background:var(--ink);border:1px solid var(--border);color:var(--cream);border-radius:4px;font-size:12px;"></div>
+          <div class="vrow"><span class="vlbl">Wall cols</span><input type="number" id="v3wC" value="21" min="3" max="80" style="width:52px;height:25px;text-align:center;background:var(--ink);border:1px solid var(--border);color:var(--cream);border-radius:4px;font-size:12px;"></div>
+          <div class="vrow"><span class="vlbl">Floor rows</span><input type="number" id="v3fR" value="4" min="1" max="20" style="width:52px;height:25px;text-align:center;background:var(--ink);border:1px solid var(--border);color:var(--cream);border-radius:4px;font-size:12px;"></div>
+          <div class="vrow"><span class="vlbl">Floor cols</span><input type="number" id="v3fC" value="5" min="1" max="40" style="width:52px;height:25px;text-align:center;background:var(--ink);border:1px solid var(--border);color:var(--cream);border-radius:4px;font-size:12px;"></div>
+          <div class="vrow" style="margin-top:4px">
+            <button class="vbtn primary" onclick="buildRoom3d()">Apply Grid</button>
+            <button class="vbtn" onclick="syncGridFromCalc()">↻ Sync from Calc</button>
+          </div>
+          <div id="v3dimInfo" style="font-size:10px;color:var(--smoke);margin-top:4px;font-family:var(--font-mono)"></div>
+        </div>
+
+        <!-- SPACER -->
+        <div class="vsec">
+          <h3>Spacer</h3>
+          <div class="vrow">
+            <input type="range" id="v3spacer" min="0" max="16" step="1" value="3">
+            <span class="vval" id="v3spacerV">3px</span>
+          </div>
+        </div>
+
+        <!-- PAINT SURFACE -->
+        <div class="vsec">
+          <h3>Paint Surface</h3>
+          <div class="vrow">
+            <button class="vbtn" onclick="sel3d('floor')">Floor</button>
+            <button class="vbtn" onclick="sel3d('back')">Back</button>
+            <button class="vbtn" onclick="sel3d('left')">Left</button>
+            <button class="vbtn" onclick="sel3d('right')">Right</button>
+          </div>
+          <div class="vrow" style="margin-top:3px">
+            <button class="vbtn primary" onclick="fillSurf3d()">Fill surface</button>
+            <button class="vbtn danger"  onclick="clearSurf3d()">Clear</button>
+          </div>
+        </div>
+
+        <!-- WALL VISIBILITY -->
+        <div class="vsec">
+          <h3>Wall Visibility</h3>
+          <div class="vvr"><span>Back wall</span>
+            <label class="vtog"><input type="checkbox" id="v3vBack" checked onchange="toggleVis3d('back',this.checked)">
+              <div class="vtog-tr"><div class="vtog-th"></div></div><span class="vtog-tx" id="v3lblBack">ON</span></label>
+          </div>
+          <div class="vvr"><span>Left wall</span>
+            <label class="vtog"><input type="checkbox" id="v3vLeft" checked onchange="toggleVis3d('left',this.checked)">
+              <div class="vtog-tr"><div class="vtog-th"></div></div><span class="vtog-tx" id="v3lblLeft">ON</span></label>
+          </div>
+          <div class="vvr"><span>Right wall</span>
+            <label class="vtog"><input type="checkbox" id="v3vRight" checked onchange="toggleVis3d('right',this.checked)">
+              <div class="vtog-tr"><div class="vtog-th"></div></div><span class="vtog-tx" id="v3lblRight">ON</span></label>
+          </div>
+        </div>
+
+        <!-- TILES -->
+        <div class="vsec">
+          <h3>Tiles</h3>
+          <div id="visuLogoSlot" onclick="document.getElementById('visuLogoInput').click()">
+            <span class="placeholder" id="visuLogoPlaceholder">+ Upload logo / brand tile</span>
+            <img id="visuLogoImg" style="display:none;">
+          </div>
+          <input type="file" id="visuLogoInput" accept="image/*" onchange="loadVisuLogo(event)" style="display:none">
+          <label style="display:inline-block;padding:5px 12px;background:var(--ink3);border:1px solid var(--border);border-radius:5px;cursor:pointer;font-size:11px;color:var(--cream);margin-bottom:6px;font-family:var(--font-mono);">
+            + Add tiles<input type="file" multiple accept="image/*" onchange="loadVisuTiles(event)" style="display:none;">
+          </label>
+          <div id="visuCarousel"></div>
+        </div>
+
+        <!-- CALC SUMMARY in VISU -->
+        <div class="vsec">
+          <h3>Calc Summary</h3>
+          <div id="visuCalcSummary" style="font-family:var(--font-mono);font-size:11px;color:var(--smoke);line-height:1.8">
+            Enter room dims in Calculator tab to see summary here.
+          </div>
+        </div>
+
+      </div><!-- /visu3dPanel -->
+    </div><!-- /visuPanel -->
+
+    <!-- Print output of visualizer -->
+    <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center" class="no-print">
+      <button class="btn btn-primary" onclick="printVisuOutput()">🖨 Print Visualizer Report</button>
+      <span style="font-family:var(--font-mono);font-size:11px;color:var(--smoke)">Includes 3D screenshot + calculation summary</span>
+    </div>
+
+  </div><!-- /tab-visu -->
+
+</div><!-- /.page -->
+
+<!-- HIDDEN INPUTS -->
+<div class="hidden-inputs">
+  <input id="tileW" type="number" step="0.01">
+  <input id="tileH" type="number" step="0.01">
+  <input id="floorW" type="number" step="0.01">
+  <input id="floorH" type="number" step="0.01">
+</div>
+
+<!-- FAB: Bathroom -->
+<div class="fab-wrap no-print">
+  <button id="openBathroom" class="fab" title="Open Bathroom Calculator">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6 Q9 3 12 3 Q15 3 15 6"/><rect x="4" y="6" width="16" height="12" rx="2"/><line x1="8" y1="18" x2="7" y2="21"/><line x1="16" y1="18" x2="17" y2="21"/></svg>
+    Bath
+  </button>
+</div>
+
+<!-- BATHROOM MODAL -->
+<div id="modalBackdrop" class="modal-backdrop" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-header">
+      <div style="width:32px;height:32px;background:rgba(245,166,35,0.12);border-radius:7px;display:flex;align-items:center;justify-content:center;color:var(--amber)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6 Q9 3 12 3 Q15 3 15 6"/><rect x="4" y="6" width="16" height="12" rx="2"/></svg>
+      </div>
+      <h2 id="modalTitle" class="modal-title">Bathroom Calculator — Light / Highlight / Dark Partitions</h2>
+      <button class="btn no-print" id="closeModal" style="margin-left:auto">✕ Close</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Partition heights -->
+      <div class="section-label" style="margin-bottom:10px">Partition Heights</div>
+      <div class="card" style="display:flex;gap:16px;align-items:flex-start">
+        <div class="partition-viz" id="partViz">
+          <div class="pv-seg pv-light" id="pvLight" style="height:30px">L</div>
+          <div class="pv-seg pv-high"  id="pvHigh"  style="height:15px">H</div>
+          <div class="pv-seg pv-dark"  id="pvDark"  style="height:25px">D</div>
+        </div>
+        <div style="flex:1">
+          <div class="form-row cols-3">
+            <div class="field">
+              <span class="field-label" style="color:#e8d5c0">Light Height</span>
+              <div style="position:relative">
+                <input id="partLightH" type="number" step="0.01" placeholder="2.50" style="background:var(--ink);color:var(--cream);border:1px solid var(--border);border-radius:6px;padding:9px 30px 9px 12px;font-family:var(--font-mono);font-size:13px;outline:none;width:100%;transition:border-color 0.18s">
+                <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);font-family:var(--font-mono);font-size:10px;color:var(--smoke);pointer-events:none">ft</span>
+              </div>
+            </div>
+            <div class="field">
+              <span class="field-label" style="color:var(--amber)">Highlight Height</span>
+              <div style="position:relative">
+                <input id="partHighH" type="number" step="0.01" placeholder="3.00" style="background:var(--ink);color:var(--cream);border:1px solid var(--border);border-radius:6px;padding:9px 30px 9px 12px;font-family:var(--font-mono);font-size:13px;outline:none;width:100%;transition:border-color 0.18s">
+                <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);font-family:var(--font-mono);font-size:10px;color:var(--smoke);pointer-events:none">ft</span>
+              </div>
+            </div>
+            <div class="field">
+              <span class="field-label" style="color:#b09070">Dark Height</span>
+              <div style="position:relative">
+                <input id="partDarkH" type="number" step="0.01" placeholder="2.50" style="background:var(--ink);color:var(--cream);border:1px solid var(--border);border-radius:6px;padding:9px 30px 9px 12px;font-family:var(--font-mono);font-size:13px;outline:none;width:100%;transition:border-color 0.18s">
+                <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);font-family:var(--font-mono);font-size:10px;color:var(--smoke);pointer-events:none">ft</span>
+              </div>
+            </div>
+          </div>
+          <p style="font-family:var(--font-mono);font-size:10px;color:var(--smoke);margin-top:8px">Partitions stack vertically — total must not exceed room height.</p>
+        </div>
+      </div>
+
+      <!-- Tile settings -->
+      <div class="section-label" style="margin-bottom:10px;margin-top:4px">Tile Settings</div>
+      <div class="card">
+        <div class="form-row cols-2">
+          <div class="field">
+            <span class="field-label">Tile Size</span>
+            <select id="bathTileSelect">
+              <option value="1.5|1|6">1.50 × 1.00 ft — 6/box</option>
+              <option value="1|1|8">1.00 × 1.00 ft — 8/box</option>
+              <option value="2|1|5">2.00 × 1.00 ft — 5/box</option>
+              <option value="2|2|4" selected>2.00 × 2.00 ft — 4/box</option>
+              <option value="1.25|1.25|5">1.25 × 1.25 ft — 5/box</option>
+              <option value="4|2|2">4.00 × 2.00 ft — 2/box</option>
+              <option value="2.75|5.5|2">2.75 × 5.50 ft — 2/box</option>
+              <option value="6|4|2">6.00 × 4.00 ft — 2/box</option>
+              <option value="2.75|8|1">2.75 × 8.00 ft — 1/box</option>
+            </select>
+          </div>
+          <div class="field">
+            <span class="field-label">Wastage %</span>
+            <div class="waste-row">
+              <select id="bathWasteSelect">
+                <option value="0">0%</option>
+                <option value="5">5%</option>
+                <option value="10" selected>10%</option>
+                <option value="other">Other…</option>
+              </select>
+              <input id="bathWasteOther" type="number" min="0" max="100" step="1" placeholder="%" style="display:none;width:90px">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bathroom Results -->
+      <div class="section-label" style="margin-bottom:10px;margin-top:4px">Bathroom Results — Light / Highlight / Dark Partitions</div>
+      <div id="validationMsg" class="validation"></div>
+
+      <div class="results-card">
+        <table>
+          <thead>
+            <tr>
+              <th>Partition</th><th>Height ft</th><th>Wall Area ft²</th>
+              <th>Tiles Needed</th><th>Extra (waste)</th><th>Boxes to Buy</th>
+            </tr>
+          </thead>
+          <tbody id="bathBody"></tbody>
+          <tfoot>
+            <tr>
+              <td colspan="2" style="color:var(--amber)">Totals</td>
+              <td id="bathTotArea">—</td>
+              <td id="bathTotTiles">—</td>
+              <td id="bathTotExtra">—</td>
+              <td id="bathTotBoxesBuy" style="color:var(--amber)">—</td>
+            </tr>
+          </tfoot>
+        </table>
+        <div class="stat-row">
+          <div class="stat-chip"><div class="val" id="bchipArea">—</div><div class="lbl">Total Wall Area ft²</div></div>
+          <div class="stat-chip"><div class="val" id="bchipTiles">—</div><div class="lbl">Tiles Needed</div></div>
+          <div class="stat-chip highlight"><div class="val" id="bchipBoxes">—</div><div class="lbl">Boxes to Buy</div></div>
+        </div>
+      </div>
+
+      <!-- Partition summary cards -->
+      <div class="part-cards" id="partitionSummary"></div>
+
+      <!-- Also show floor for bathroom -->
+      <div class="section-label" style="margin-top:16px;margin-bottom:10px">Bathroom Floor</div>
+      <div class="card">
+        <div class="form-row cols-2">
+          <div class="field">
+            <span class="field-label">Tile Size</span>
+            <select id="bathFloorTileSelect">
+              <option value="1.5|1|6">1.50 × 1.00 ft — 6/box</option>
+              <option value="1|1|8" selected>1.00 × 1.00 ft — 8/box</option>
+              <option value="2|1|5">2.00 × 1.00 ft — 5/box</option>
+              <option value="2|2|4">2.00 × 2.00 ft — 4/box</option>
+              <option value="1.25|1.25|5">1.25 × 1.25 ft — 5/box</option>
+            </select>
+          </div>
+          <div class="field">
+            <span class="field-label">Wastage %</span>
+            <div class="waste-row">
+              <select id="bathFloorWasteSelect">
+                <option value="0">0%</option>
+                <option value="5" selected>5%</option>
+                <option value="10">10%</option>
+                <option value="other">Other…</option>
+              </select>
+              <input id="bathFloorWasteOther" type="number" min="0" max="100" step="1" placeholder="%" style="display:none;width:90px">
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="results-card" style="margin-top:0">
+        <table>
+          <thead>
+            <tr><th>Surface</th><th>Area ft²</th><th>Tile Size</th><th>Tiles</th><th>Extra</th><th>Boxes</th></tr>
+          </thead>
+          <tbody id="bathFloorBody"></tbody>
+        </table>
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px" class="no-print">
+        <button id="bathReset" class="btn btn-ghost">Reset Bathroom</button>
+        <button onclick="printBathroomReport()" class="btn btn-primary">🖨 Print Report</button>
+      </div>
+
+    </div><!-- /.modal-body -->
+  </div>
+</div>
+
+<!-- PRINT VIEW -->
+<div id="printView" aria-hidden="true" style="max-width:900px;margin:20px auto;font-family:serif"></div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════
+   UTILITIES
+═══════════════════════════════════════════════════════════ */
+const $=id=>document.getElementById(id);
+const themeKey='tiles_theme_v2';
+function fmt(n,d=2){ if(n===null||n===undefined||Number.isNaN(n))return'—'; return Number(n).toLocaleString(undefined,{maximumFractionDigits:d}); }
+function parseSelectVal(v){ const p=(v||'0|0|0').split('|').map(x=>parseFloat(x)||0); return{w:p[0],h:p[1],ppb:p[2]}; }
+
+/* ═══════════════════════════════════════════════════════════
+   TABS
+═══════════════════════════════════════════════════════════ */
+function switchTab(t){
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.main-tab').forEach(b=>b.classList.remove('active'));
+  $('tab-'+t).classList.add('active');
+  const tabs=document.querySelectorAll('.main-tab');
+  const idx=t==='calc'?0:1;
+  tabs[idx].classList.add('active');
+  if(t==='visu'){ updateVisuSync(); buildRoom3d(); }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   THEME
+═══════════════════════════════════════════════════════════ */
+function setTheme(t){
+  document.body.setAttribute('data-theme',t);
+  localStorage.setItem(themeKey,t);
+}
+(function initTheme(){
+  const saved=localStorage.getItem(themeKey)||'dark';
+  setTheme(saved);
+  $('themeToggle').addEventListener('click',()=>{
+    const next=document.body.getAttribute('data-theme')==='dark'?'light':'dark';
+    setTheme(next);
+    const vars=next==='light'?
+      {'--ink':'#f6f7f9','--ink2':'#ffffff','--ink3':'#f0f1f3','--cream':'#0b1220','--smoke':'#6b7280','--smoke2':'#374151','--border':'rgba(0,0,0,0.08)'}:
+      {'--ink':'#0d1117','--ink2':'#161c25','--ink3':'#1e2631','--cream':'#f5efe6','--smoke':'#8a96a8','--smoke2':'#bcc5d0','--border':'rgba(255,255,255,0.07)'};
+    Object.entries(vars).forEach(([k,v])=>document.documentElement.style.setProperty(k,v));
+  });
+})();
+
+/* ═══════════════════════════════════════════════════════════
+   SYNC SELECTS
+═══════════════════════════════════════════════════════════ */
+function syncWallSelectToInputs(){ const s=parseSelectVal($('wallTileSelect').value); $('tileW').value=s.w; $('tileH').value=s.h; $('tileW').dataset.ppb=s.ppb; $('tileH').dataset.ppb=s.ppb; }
+function syncFloorSelectToInputs(){ const s=parseSelectVal($('floorTileSelect').value); $('floorW').value=s.w; $('floorH').value=s.h; $('floorW').dataset.ppb=s.ppb; $('floorH').dataset.ppb=s.ppb; }
+syncWallSelectToInputs(); syncFloorSelectToInputs();
+
+/* ═══════════════════════════════════════════════════════════
+   WASTE HANDLERS
+═══════════════════════════════════════════════════════════ */
+function attachWasteHandlers(selId,othId,cb){
+  const sel=$(selId),oth=$(othId);
+  sel.addEventListener('change',()=>{ oth.style.display=sel.value==='other'?'inline-block':'none'; if(sel.value!=='other')oth.value=''; if(cb)cb(); });
+  oth.addEventListener('input',cb||function(){});
+}
+function getWaste(selId,othId){ const sel=$(selId); if(!sel)return 0; if(sel.value==='other'){const v=parseFloat($(othId).value);return isFinite(v)?Math.max(0,v):0;} return parseFloat(sel.value)||0; }
+
+attachWasteHandlers('wallWasteSelect','wallWasteOther',renderMain);
+attachWasteHandlers('floorWasteSelect','floorWasteOther',renderMain);
+attachWasteHandlers('bathWasteSelect','bathWasteOther',()=>{if(window.bathRender)window.bathRender();});
+attachWasteHandlers('bathFloorWasteSelect','bathFloorWasteOther',()=>{if(window.bathRender)window.bathRender();});
+
+/* ═══════════════════════════════════════════════════════════
+   MAIN COMPUTE
+═══════════════════════════════════════════════════════════ */
+function computeMain(){
+  const L=parseFloat($('roomLen').value)||0,W=parseFloat($('roomWid').value)||0,H=parseFloat($('roomHei').value)||0;
+  const tw=Math.max(0,parseFloat($('tileW').value)||0),th=Math.max(0,parseFloat($('tileH').value)||0);
+  const ftw=Math.max(0,parseFloat($('floorW').value)||0),fth=Math.max(0,parseFloat($('floorH').value)||0);
+  const wallWaste=getWaste('wallWasteSelect','wallWasteOther');
+  const floorWaste=getWaste('floorWasteSelect','floorWasteOther');
+  const rows=[]; let totTiles=0,totExtra=0,totBoxesBuy=0;
+
+  const wallArea=2*(W*H)+2*(L*H);
+  if(tw>0&&th>0){
+    const tileArea=tw*th,tilesNeeded=Math.ceil(wallArea/tileArea);
+    const extraTiles=Math.ceil(tilesNeeded*(wallWaste/100)),finalTiles=tilesNeeded+extraTiles;
+    const ppb=parseFloat($('tileW').dataset.ppb)||null;
+    const boxesBuy=ppb?Math.ceil(finalTiles/ppb):'N/A';
+    rows.push({surface:'All Walls',area:wallArea,tileSize:`${tw}×${th}`,tilesNeeded,extraTiles,boxesBuy});
+    totTiles+=tilesNeeded; totExtra+=extraTiles; if(typeof boxesBuy==='number')totBoxesBuy+=boxesBuy;
+  } else { rows.push({surface:'All Walls',area:wallArea,tileSize:'N/A',tilesNeeded:'N/A',extraTiles:'N/A',boxesBuy:'N/A'}); }
+
+  const floorArea=L*W;
+  if(ftw>0&&fth>0){
+    const tileArea=ftw*fth,tilesNeeded=Math.ceil(floorArea/tileArea);
+    const extraTiles=Math.ceil(tilesNeeded*(floorWaste/100)),finalTiles=tilesNeeded+extraTiles;
+    const ppb=parseFloat($('floorW').dataset.ppb)||null;
+    const boxesBuy=ppb?Math.ceil(finalTiles/ppb):'N/A';
+    rows.push({surface:'Floor',area:floorArea,tileSize:`${ftw}×${fth}`,tilesNeeded,extraTiles,boxesBuy});
+    totTiles+=tilesNeeded; totExtra+=extraTiles; if(typeof boxesBuy==='number')totBoxesBuy+=boxesBuy;
+  } else { rows.push({surface:'Floor',area:floorArea,tileSize:'N/A',tilesNeeded:'N/A',extraTiles:'N/A',boxesBuy:'N/A'}); }
+
+  return{rows,totals:{totTiles,totExtra,totBoxesBuy},dims:{L,W,H}};
+}
+
+function renderMain(){
+  syncWallSelectToInputs(); syncFloorSelectToInputs();
+  const out=computeMain();
+  $('summaryBody').innerHTML=out.rows.map(r=>`<tr>
+    <td>${r.surface}</td>
+    <td class="num">${typeof r.area==='number'?fmt(r.area):r.area}</td>
+    <td>${r.tileSize}</td>
+    <td class="num">${typeof r.tilesNeeded==='number'?fmt(r.tilesNeeded,0):r.tilesNeeded}</td>
+    <td class="num">${typeof r.extraTiles==='number'?fmt(r.extraTiles,0):r.extraTiles}</td>
+    <td class="boxes">${typeof r.boxesBuy==='number'?fmt(r.boxesBuy,0):r.boxesBuy}</td>
+  </tr>`).join('');
+  $('totTiles').textContent=fmt(out.totals.totTiles,0);
+  $('totExtra').textContent=fmt(out.totals.totExtra,0);
+  $('totBoxesBuy').textContent=fmt(out.totals.totBoxesBuy,0);
+  $('chipTiles').textContent=fmt(out.totals.totTiles,0);
+  $('chipExtra').textContent=fmt(out.totals.totExtra,0);
+  $('chipBoxes').textContent=fmt(out.totals.totBoxesBuy,0);
+  updateVisuSync();
+}
+
+/* Visu sync */
+function updateVisuSync(){
+  const out=computeMain();
+  $('syncL').textContent=fmt(out.dims.L,2);
+  $('syncW').textContent=fmt(out.dims.W,2);
+  $('syncH').textContent=fmt(out.dims.H,2);
+  // Update calc summary in visu panel
+  const bath=window._bathTotals||{};
+  const bRows=window._bathRows||[];
+  $('visuCalcSummary').innerHTML=`
+    <div><b style="color:var(--cream)">Room</b>: L=${fmt(out.dims.L,2)} W=${fmt(out.dims.W,2)} H=${fmt(out.dims.H,2)} ft</div>
+    <div><b style="color:var(--cream)">Wall tiles</b>: ${fmt(out.totals.totTiles,0)} tiles / ${fmt(out.totals.totBoxesBuy,0)} boxes</div>
+    <div><b style="color:var(--cream)">Floor tiles</b>: included above</div>
+    ${bath.tiles?`<div style="margin-top:6px;color:var(--amber)">— Bathroom —</div>
+    <div>Total wall area: ${fmt(bath.area,2)} ft²</div>
+    <div>Tiles: ${fmt(bath.tiles,0)} + ${fmt(bath.extra,0)} extra = <b style="color:var(--amber)">${fmt(bath.boxesBuy,0)} boxes</b></div>
+    ${bRows.map(r=>`<div style="color:${r.partition==='Light'?'#e8d5c0':r.partition==='Highlight'?'var(--amber)':'#b09070'}">${r.partition}: ${fmt(r.height,2)}ft → ${fmt(r.areaAll,2)}ft² → ${typeof r.tilesNeeded==='number'?fmt(r.tilesNeeded,0):r.tilesNeeded} tiles / ${typeof r.boxesBuy==='number'?fmt(r.boxesBuy,0):r.boxesBuy} boxes</div>`).join('')}`:''}
+  `;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   BATHROOM MODULE
+═══════════════════════════════════════════════════════════ */
+(function bathroomModule(){
+  function parseTile(val){ const[w,h,ppb]=(val||'0|0|0').split('|').map(x=>parseFloat(x)||0);return{w,h,ppb}; }
+  function getMainDims(){ return{L:parseFloat($('roomLen').value)||0,W:parseFloat($('roomWid').value)||0,H:parseFloat($('roomHei').value)||0}; }
+  function getBathWaste(){ return getWaste('bathWasteSelect','bathWasteOther'); }
+  function getBathFloorWaste(){ return getWaste('bathFloorWasteSelect','bathFloorWasteOther'); }
+
+  function updateViz(pLight,pHigh,pDark,H){
+    const scale=120/Math.max(pLight+pHigh+pDark,H,0.01);
+    $('pvLight').style.height=Math.max(pLight*scale,4)+'px';
+    $('pvHigh').style.height=Math.max(pHigh*scale,4)+'px';
+    $('pvDark').style.height=Math.max(pDark*scale,4)+'px';
+  }
+
+  function bathCompute(){
+    const{L,W,H}=getMainDims();
+    const pLight=parseFloat($('partLightH').value)||0;
+    const pHigh=parseFloat($('partHighH').value)||0;
+    const pDark=parseFloat($('partDarkH').value)||0;
+    const sumParts=pLight+pHigh+pDark;
+    const valid=sumParts<=H+1e-9;
+    const tile=parseTile($('bathTileSelect').value);
+    const tileArea=tile.w*tile.h,wastePct=getBathWaste();
+    const parts=[{name:'Light',h:pLight,cls:'light'},{name:'Highlight',h:pHigh,cls:'high'},{name:'Dark',h:pDark,cls:'dark'}];
+    const rows=[]; const totals={area:0,tiles:0,extra:0,boxesBuy:0};
+
+    parts.forEach(part=>{
+      const h=part.h;
+      if(h<=0){ rows.push({partition:part.name,cls:part.cls,height:h,areaAll:0,tilesNeeded:0,extra:0,boxesBuy:0}); return; }
+      const areaAll=2*(L+W)*h;
+      if(tileArea>0){
+        const tilesNeeded=Math.ceil(areaAll/tileArea),extra=Math.ceil(tilesNeeded*(wastePct/100));
+        const final=tilesNeeded+extra,boxesBuy=tile.ppb>0?Math.ceil(final/tile.ppb):'N/A';
+        totals.area+=areaAll; totals.tiles+=tilesNeeded; totals.extra+=extra;
+        if(typeof boxesBuy==='number')totals.boxesBuy+=boxesBuy;
+        rows.push({partition:part.name,cls:part.cls,height:h,areaAll,tilesNeeded,extra,boxesBuy});
+      } else {
+        rows.push({partition:part.name,cls:part.cls,height:h,areaAll,tilesNeeded:'N/A',extra:'N/A',boxesBuy:'N/A'});
+      }
+    });
+
+    // Floor
+    const floorTile=parseTile($('bathFloorTileSelect').value);
+    const floorWaste=getBathFloorWaste();
+    const floorArea=L*W;
+    let floorRow=null;
+    if(floorTile.w>0&&floorTile.h>0){
+      const fa=floorTile.w*floorTile.h,ft=Math.ceil(floorArea/fa),fe=Math.ceil(ft*(floorWaste/100));
+      const ff=ft+fe,fb=floorTile.ppb>0?Math.ceil(ff/floorTile.ppb):'N/A';
+      floorRow={surface:'Bathroom Floor',area:floorArea,tileSize:`${floorTile.w}×${floorTile.h}`,tilesNeeded:ft,extraTiles:fe,boxesBuy:fb};
+    } else { floorRow={surface:'Bathroom Floor',area:floorArea,tileSize:'N/A',tilesNeeded:'N/A',extraTiles:'N/A',boxesBuy:'N/A'}; }
+
+    return{rows,totals,floorRow,validation:{valid,msg:valid?'':`Partitions total ${sumParts.toFixed(2)} ft exceeds room height ${H.toFixed(2)} ft.`}};
+  }
+
+  window.bathRender=function(){
+    const out=bathCompute();
+    const vm=$('validationMsg');
+    vm.textContent=out.validation.msg;
+    vm.className='validation'+(out.validation.msg?' error':'');
+
+    $('bathBody').innerHTML=out.rows.map(r=>`<tr>
+      <td style="color:${r.partition==='Light'?'#e8d5c0':r.partition==='Highlight'?'var(--amber)':'#b09070'}">${r.partition}</td>
+      <td class="num">${fmt(r.height,2)}</td>
+      <td class="num">${typeof r.areaAll==='number'?fmt(r.areaAll,2):r.areaAll}</td>
+      <td class="num">${typeof r.tilesNeeded==='number'?fmt(r.tilesNeeded,0):r.tilesNeeded}</td>
+      <td class="num">${typeof r.extra==='number'?fmt(r.extra,0):r.extra}</td>
+      <td class="boxes">${typeof r.boxesBuy==='number'?fmt(r.boxesBuy,0):r.boxesBuy}</td>
+    </tr>`).join('');
+
+    $('bathTotArea').textContent=fmt(out.totals.area,2);
+    $('bathTotTiles').textContent=fmt(out.totals.tiles,0);
+    $('bathTotExtra').textContent=fmt(out.totals.extra,0);
+    $('bathTotBoxesBuy').textContent=fmt(out.totals.boxesBuy,0);
+    $('bchipArea').textContent=fmt(out.totals.area,2);
+    $('bchipTiles').textContent=fmt(out.totals.tiles,0);
+    $('bchipBoxes').textContent=fmt(out.totals.boxesBuy,0);
+
+    // Floor result
+    const fr=out.floorRow;
+    $('bathFloorBody').innerHTML=`<tr>
+      <td>${fr.surface}</td>
+      <td class="num">${typeof fr.area==='number'?fmt(fr.area,2):fr.area}</td>
+      <td>${fr.tileSize}</td>
+      <td class="num">${typeof fr.tilesNeeded==='number'?fmt(fr.tilesNeeded,0):fr.tilesNeeded}</td>
+      <td class="num">${typeof fr.extraTiles==='number'?fmt(fr.extraTiles,0):fr.extraTiles}</td>
+      <td class="boxes">${typeof fr.boxesBuy==='number'?fmt(fr.boxesBuy,0):fr.boxesBuy}</td>
+    </tr>`;
+
+    // Partition summary cards
+    $('partitionSummary').innerHTML=out.rows.map(r=>`
+      <div class="part-card">
+        <div class="part-card-name ${r.cls}">${r.partition}</div>
+        <div class="part-stat"><span class="k">Height</span><span class="v">${fmt(r.height,2)} ft</span></div>
+        <div class="part-stat"><span class="k">Wall Area</span><span class="v">${typeof r.areaAll==='number'?fmt(r.areaAll,2)+' ft²':r.areaAll}</span></div>
+        <div class="part-stat"><span class="k">Tiles</span><span class="v">${typeof r.tilesNeeded==='number'?fmt(r.tilesNeeded,0):r.tilesNeeded}</span></div>
+        <div class="part-stat"><span class="k">Extra</span><span class="v">${typeof r.extra==='number'?fmt(r.extra,0):r.extra}</span></div>
+        <div class="part-stat"><span class="k">Boxes</span><span class="v" style="color:var(--amber)">${typeof r.boxesBuy==='number'?fmt(r.boxesBuy,0):r.boxesBuy}</span></div>
+      </div>`).join('');
+
+    // Viz
+    const pL=parseFloat($('partLightH').value)||0,pH=parseFloat($('partHighH').value)||0,pD=parseFloat($('partDarkH').value)||0;
+    const{H}=out.floorRow?{H:pL+pH+pD}:{H:0};
+    updateViz(pL,pH,pD,pL+pH+pD);
+
+    window._bathTotals=out.totals; window._bathRows=out.rows;
+    window._bathFloorRow=out.floorRow;
+    updateVisuSync();
+  };
+
+  ['partLightH','partHighH','partDarkH','bathTileSelect','bathWasteSelect','bathWasteOther','bathFloorTileSelect','bathFloorWasteSelect','bathFloorWasteOther'].forEach(id=>{
+    if($(id))$(id).addEventListener('input',window.bathRender);
+  });
+  ['roomLen','roomWid','roomHei'].forEach(id=>{if($(id))$(id).addEventListener('input',window.bathRender);});
+
+  window.resetBathroom=function(){
+    $('partLightH').value='2.5'; $('partHighH').value='3.0'; $('partDarkH').value='2.5';
+    $('bathTileSelect').value='2|2|4'; $('bathWasteSelect').value='10';
+    $('bathWasteOther').value=''; $('bathWasteOther').style.display='none';
+    $('bathFloorTileSelect').value='1|1|8'; $('bathFloorWasteSelect').value='5';
+    $('bathFloorWasteOther').value=''; $('bathFloorWasteOther').style.display='none';
+    window.bathRender();
+  };
+  window.resetBathroom();
+})();
+
+/* ═══════════════════════════════════════════════════════════
+   WIRE MAIN CONTROLS
+═══════════════════════════════════════════════════════════ */
+['wallTileSelect','floorTileSelect'].forEach(id=>{
+  if($(id))$(id).addEventListener('input',()=>{ syncWallSelectToInputs(); syncFloorSelectToInputs(); renderMain(); });
+});
+['roomLen','roomWid','roomHei','tileW','tileH','floorW','floorH'].forEach(id=>{
+  if($(id))$(id).addEventListener('input',()=>{ renderMain(); if(window.bathRender)window.bathRender(); });
+});
+
+$('resetBtn').addEventListener('click',()=>{
+  $('roomLen').value=''; $('roomWid').value=''; $('roomHei').value='';
+  $('wallTileSelect').value='2|2|4'; $('floorTileSelect').value='2|2|4';
+  syncWallSelectToInputs(); syncFloorSelectToInputs();
+  $('wallWasteSelect').value='10'; $('floorWasteSelect').value='0';
+  $('wallWasteOther').value=''; $('wallWasteOther').style.display='none';
+  $('floorWasteOther').value=''; $('floorWasteOther').style.display='none';
+  renderMain(); if(window.resetBathroom)window.resetBathroom();
+});
+
+/* ═══════════════════════════════════════════════════════════
+   MODAL
+═══════════════════════════════════════════════════════════ */
+$('openBathroom').addEventListener('click',()=>{ $('modalBackdrop').classList.add('open'); $('modalBackdrop').setAttribute('aria-hidden','false'); });
+$('closeModal').addEventListener('click',()=>{ $('modalBackdrop').classList.remove('open'); $('modalBackdrop').setAttribute('aria-hidden','true'); });
+window.addEventListener('keydown',e=>{ if(e.key==='Escape'){$('modalBackdrop').classList.remove('open'); $('modalBackdrop').setAttribute('aria-hidden','true');} });
+$('bathReset').addEventListener('click',()=>{ if(window.resetBathroom)window.resetBathroom(); });
+
+/* ═══════════════════════════════════════════════════════════
+   ROOM IMAGE SELECTORS
+═══════════════════════════════════════════════════════════ */
+const roomBgStore={};
+let activeRoom='main';
+
+function selectRoom(name,btn){
+  activeRoom=name;
+  document.querySelectorAll('.room-card-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  updateVisuSync();
+}
+
+function setRoomBg(name,e){
+  const file=e.target.files[0]; if(!file)return;
+  const url=URL.createObjectURL(file);
+  roomBgStore[name]=url;
+  const thumb=$('rthumb-'+name);
+  thumb.src=url; thumb.classList.add('has-img');
+}
+
+function setViewerBg(e){
+  const file=e.target.files[0]; if(!file)return;
+  const url=URL.createObjectURL(file);
+  $('viewer3d').style.backgroundImage=`url(${url})`;
+  $('viewer3d').style.backgroundSize='cover';
+  $('viewer3d').style.backgroundPosition='center';
+}
+
+/* ═══════════════════════════════════════════════════════════
+   3D VISUALIZER
+═══════════════════════════════════════════════════════════ */
+const roomEl3d=$('room3d');
+const sceneWrap3d=$('sceneWrap3d');
+const viewer3dEl=$('viewer3d');
+
+const VL=320,VB=240,VH=200;
+
+const VBASE={
+  back: 'translateZ(0px)',
+  left: 'rotateY(90deg)',
+  right:`translateX(${VL}px) translateZ(${VB}px) rotateY(-90deg)`,
+  floor:`translateY(${VH}px) rotateX(-90deg)`
+};
+
+function defaultOffset3d(name){
+  if(name==='left') return{tx:0,ty:0,tz:240,rx:0,ry:0};
+  if(name==='right')return{tx:0,ty:0,tz:-240,rx:0,ry:0};
+  if(name==='floor')return{tx:0,ty:0,tz:240,rx:0,ry:0};
+  return{tx:0,ty:0,tz:0,rx:0,ry:0};
+}
+
+const offsets3d={back:defaultOffset3d('back'),left:defaultOffset3d('left'),right:defaultOffset3d('right'),floor:defaultOffset3d('floor')};
+
+let adjSurfName3d='back',adjLocked3d=false;
+let selImg3d=null,activeSurf3d='floor',tool3d='orbit';
+let rotX3d=-25,rotY3d=32,zoom3d=0.85;
+let surfs3d={},cellStore3d={},spanStore3d={},painting3d=false;
+
+let spanDragging3d=false,spanStart3d=null,spanSurf3d=null;
+
+function gv3d(id){return Math.max(1,parseInt($(id).value)||1);}
+function spacerPx3d(){return parseInt($('v3spacer').value)||0;}
+
+function splitCols3d(total){
+  const p=VL+VB+VB;
+  const bC=Math.max(1,Math.round(total*VL/p));
+  const lC=Math.max(1,Math.round(total*VB/p));
+  const rC=Math.max(1,total-bC-lC);
+  return{bC,lC,rC};
+}
+
+function composeTransform3d(name){
+  const o=offsets3d[name];
+  return `translate3d(${o.tx}px,${o.ty}px,${o.tz}px) rotateX(${o.rx}deg) rotateY(${o.ry}deg) `+VBASE[name];
+}
+function applyTransform3d(name){ if(surfs3d[name])surfs3d[name].style.transform=composeTransform3d(name); }
+
+function getCellKey3d(r,c){return r+'_'+c;}
+
+function makeGrid3d(el,rows,cols,W,Ht,sName){
+  el.innerHTML='';
+  el.style.width=W+'px'; el.style.height=Ht+'px';
+  el.style.gridTemplateRows=`repeat(${rows},1fr)`;
+  el.style.gridTemplateColumns=`repeat(${cols},1fr)`;
+  const g=spacerPx3d();
+  el.style.gap=g+'px';
+  el.style.background=g>0?'#d1d5db':'#fff';
+  el.style.position='relative';
+  if(!cellStore3d[sName])cellStore3d[sName]={};
+  if(!spanStore3d[sName])spanStore3d[sName]=[];
+  for(let r=0;r<rows;r++){
+    for(let c=0;c<cols;c++){
+      const d=document.createElement('div');
+      d.className='cell3d'; d.dataset.r=r; d.dataset.c=c; d.dataset.s=sName;
+      const k=getCellKey3d(r,c);
+      if(cellStore3d[sName][k]){ d.style.backgroundImage=cellStore3d[sName][k]; d.style.backgroundSize='cover'; d.style.backgroundPosition='center'; }
+      else { d.style.background='#fff'; }
+      el.appendChild(d);
+    }
+  }
+  renderSpans3d(sName);
+}
+
+function buildRoom3d(){
+  const wR=gv3d('v3wR'),tWC=gv3d('v3wC'),fR=gv3d('v3fR'),fC=gv3d('v3fC');
+  const{bC,lC,rC}=splitCols3d(tWC);
+  $('v3dimInfo').textContent=`Back:${bC} | Left:${lC} | Right:${rC}`;
+
+  roomEl3d.innerHTML=''; surfs3d={};
+  roomEl3d.style.width=VL+'px'; roomEl3d.style.height=VH+'px';
+  roomEl3d.style.transformStyle='preserve-3d';
+
+  function addSurf(name,rows,cols,W,Ht){
+    const d=document.createElement('div');
+    d.className='surf3d'; d.id='surf3d-'+name;
+    d.style.transformOrigin='0 0 0'; d.style.position='absolute'; d.style.top='0'; d.style.left='0';
+    makeGrid3d(d,rows,cols,W,Ht,name);
+    d.style.transform=composeTransform3d(name);
+    roomEl3d.appendChild(d); surfs3d[name]=d;
+  }
+  addSurf('back',wR,bC,VL,VH);
+  addSurf('left',wR,lC,VB,VH);
+  addSurf('right',wR,rC,VB,VH);
+  addSurf('floor',fR,fC,VL,VB);
+
+  ['back','left','right'].forEach(n=>{
+    const cb=$('v3v'+n[0].toUpperCase()+n.slice(1));
+    if(cb)setVis3d(n,cb.checked,false);
+  });
+  applySpacerCol3d();
+  highlightSurf3d(activeSurf3d);
+  updateView3d();
+  updateAdjUI3d();
+}
+
+/* Sync grid from calc dims */
+function syncGridFromCalc(){
+  const L=parseFloat($('roomLen').value)||0,W=parseFloat($('roomWid').value)||0,H=parseFloat($('roomHei').value)||0;
+  if(L>0&&W>0&&H>0){
+    // Scale grid roughly: 1ft ~ 2 grid cols
+    const wallCols=Math.max(6,Math.round((L+W)*2));
+    const wallRows=Math.max(2,Math.round(H*1.5));
+    const floorCols=Math.max(3,Math.round(W*2));
+    const floorRows=Math.max(2,Math.round(L*1.5));
+    $('v3wC').value=Math.min(wallCols,60);
+    $('v3wR').value=Math.min(wallRows,12);
+    $('v3fC').value=Math.min(floorCols,20);
+    $('v3fR').value=Math.min(floorRows,12);
+    buildRoom3d();
+    $('visu3dStatus').textContent=`Grid synced from calc: L=${L} W=${W} H=${H} ft`;
+  } else {
+    $('visu3dStatus').textContent='Enter room dims in Calculator tab first.';
+  }
+}
+
+/* Span rendering */
+function renderSpans3d(sName){
+  const el=surfs3d[sName]; if(!el)return;
+  el.querySelectorAll('.span-img3d').forEach(s=>s.remove());
+  const spans=spanStore3d[sName]||[];
+  const rows=parseInt(el.style.gridTemplateRows.match(/\d+/)||1);
+  const cols=parseInt(el.style.gridTemplateColumns.match(/\d+/)||1);
+  const W=parseFloat(el.style.width);
+  const H=parseFloat(el.style.height);
+  const g=spacerPx3d();
+  const cw=(W-g*(cols-1))/cols;
+  const ch=(H-g*(rows-1))/rows;
+  spans.forEach(sp=>{
+    const x=sp.c1*(cw+g),y=sp.r1*(ch+g);
+    const w=(sp.c2-sp.c1+1)*cw+(sp.c2-sp.c1)*g;
+    const h=(sp.r2-sp.r1+1)*ch+(sp.r2-sp.r1)*g;
+    const div=document.createElement('div');
+    div.className='span-img3d';
+    div.style.left=x+'px'; div.style.top=y+'px';
+    div.style.width=w+'px'; div.style.height=h+'px';
+    div.style.backgroundImage=`url(${sp.img})`;
+    el.appendChild(div);
+  });
+}
+
+function addSpan3d(sName,r1,c1,r2,c2,img){
+  if(!spanStore3d[sName])spanStore3d[sName]=[];
+  spanStore3d[sName]=spanStore3d[sName].filter(sp=>sp.r2<r1||sp.r1>r2||sp.c2<c1||sp.c1>c2);
+  const cs=cellStore3d[sName]||{};
+  for(let r=r1;r<=r2;r++) for(let c=c1;c<=c2;c++){
+    const k=getCellKey3d(r,c); delete cs[k];
+    const cell=surfs3d[sName]&&surfs3d[sName].querySelector(`[data-r="${r}"][data-c="${c}"]`);
+    if(cell){cell.style.backgroundImage='';cell.style.background='#fff';}
+  }
+  spanStore3d[sName].push({r1,c1,r2,c2,img});
+  renderSpans3d(sName);
+}
+
+function eraseSpansAt3d(sName,r,c){
+  if(!spanStore3d[sName])return;
+  spanStore3d[sName]=spanStore3d[sName].filter(sp=>!(r>=sp.r1&&r<=sp.r2&&c>=sp.c1&&c<=sp.c2));
+  renderSpans3d(sName);
+}
+
+/* SPAN DRAG */
+viewer3dEl.addEventListener('pointerdown',e=>{
+  if(tool3d!=='span')return;
+  const cell=e.target.closest('.cell3d');
+  if(!cell)return;
+  spanDragging3d=true; spanSurf3d=cell.dataset.s;
+  spanStart3d={r:parseInt(cell.dataset.r),c:parseInt(cell.dataset.c)};
+  highlightSpanCells3d(spanSurf3d,spanStart3d,spanStart3d);
+  e.preventDefault();
+});
+
+viewer3dEl.addEventListener('pointermove',e=>{
+  if(!spanDragging3d)return;
+  const el=document.elementFromPoint(e.clientX,e.clientY);
+  if(!el)return;
+  const cell=el.closest?el.closest('.cell3d'):null;
+  if(cell&&cell.dataset.s===spanSurf3d){
+    const r2=parseInt(cell.dataset.r),c2=parseInt(cell.dataset.c);
+    const r1=Math.min(spanStart3d.r,r2),rc2=Math.max(spanStart3d.r,r2);
+    const c1=Math.min(spanStart3d.c,c2),cc2=Math.max(spanStart3d.c,c2);
+    highlightSpanCells3d(spanSurf3d,{r:r1,c:c1},{r:rc2,c:cc2});
+  }
+});
+
+viewer3dEl.addEventListener('pointerup',e=>{
+  if(!spanDragging3d)return;
+  spanDragging3d=false;
+  const sel=surfs3d[spanSurf3d]&&surfs3d[spanSurf3d].querySelectorAll('.sel-cell');
+  if(sel&&sel.length>0){
+    let minR=999,maxR=-1,minC=999,maxC=-1;
+    sel.forEach(c=>{ const r=parseInt(c.dataset.r),cc=parseInt(c.dataset.c); minR=Math.min(minR,r);maxR=Math.max(maxR,r);minC=Math.min(minC,cc);maxC=Math.max(maxC,cc); });
+    sel.forEach(c=>c.classList.remove('sel-cell'));
+    if(selImg3d){ addSpan3d(spanSurf3d,minR,minC,maxR,maxC,selImg3d); $('visu3dStatus').textContent=`Spanned ${(maxR-minR+1)}r×${(maxC-minC+1)}c on ${spanSurf3d}`; }
+    else { $('visu3dStatus').textContent='Pick a tile first!'; }
+  }
+  spanSurf3d=null; spanStart3d=null;
+});
+
+function highlightSpanCells3d(sName,from,to){
+  const el=surfs3d[sName]; if(!el)return;
+  el.querySelectorAll('.sel-cell').forEach(c=>c.classList.remove('sel-cell'));
+  for(let r=from.r;r<=to.r;r++) for(let c=from.c;c<=to.c;c++){
+    const cell=el.querySelector(`[data-r="${r}"][data-c="${c}"]`);
+    if(cell)cell.classList.add('sel-cell');
+  }
+}
+
+/* ADJUST SURFACE */
+function selectAdjSurf3d(name,btn){
+  adjSurfName3d=name;
+  document.querySelectorAll('#visu3dPanel .surf-tab').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  updateAdjUI3d();
+}
+
+function nudge3d(axis,delta){
+  if(adjLocked3d)return;
+  offsets3d[adjSurfName3d][axis]=(offsets3d[adjSurfName3d][axis]||0)+delta;
+  applyTransform3d(adjSurfName3d);
+  updateAdjUI3d();
+}
+
+function updateAdjUI3d(){
+  const o=offsets3d[adjSurfName3d];
+  $('av3-tx').textContent=o.tx+'px';
+  $('av3-ty').textContent=o.ty+'px';
+  $('av3-tz').textContent=o.tz+'px';
+  $('av3-rx').textContent=o.rx+'°';
+  $('av3-ry').textContent=o.ry+'°';
+  ['tx','ty','tz','rx','ry'].forEach(k=>{
+    const bm=$('adj3-'+k+'-m'),bp=$('adj3-'+k+'-p');
+    if(bm){bm.disabled=adjLocked3d;bp.disabled=adjLocked3d;}
+  });
+  $('resetSurf3dBtn').disabled=adjLocked3d;
+  $('resetAll3dBtn').disabled=adjLocked3d;
+}
+
+function resetSurf3d(){ if(adjLocked3d)return; offsets3d[adjSurfName3d]=defaultOffset3d(adjSurfName3d); applyTransform3d(adjSurfName3d); updateAdjUI3d(); }
+function resetAllSurfs3d(){ if(adjLocked3d)return; ['back','left','right','floor'].forEach(n=>{offsets3d[n]=defaultOffset3d(n);applyTransform3d(n);}); updateAdjUI3d(); }
+function toggleLock3d(){
+  adjLocked3d=!adjLocked3d;
+  const btn=$('lockBtn3d'),lbl=$('lockLabel3d');
+  if(adjLocked3d){ btn.textContent='🔒 Locked'; btn.className='lock-btn locked'; lbl.textContent='Adjustments: Locked'; }
+  else { btn.textContent='🔓 Unlock'; btn.className='lock-btn unlocked'; lbl.textContent='Adjustments: Unlocked'; }
+  updateAdjUI3d();
+}
+
+/* VIEW */
+function updateView3d(){
+  roomEl3d.style.transform=`rotateX(${rotX3d}deg) rotateY(${rotY3d}deg)`;
+  sceneWrap3d.style.transform=`scale(${zoom3d})`;
+}
+
+$('v3zoomR').addEventListener('input',()=>{ zoom3d=parseInt($('v3zoomR').value)/100; $('v3zoomV').textContent=Math.round(zoom3d*100)+'%'; updateView3d(); });
+$('v3rotR').addEventListener('input',()=>{ rotY3d=parseInt($('v3rotR').value); $('v3rotV').textContent=rotY3d+'°'; updateView3d(); });
+$('v3tiltR').addEventListener('input',()=>{ rotX3d=parseInt($('v3tiltR').value); $('v3tiltV').textContent=rotX3d+'°'; updateView3d(); });
+
+viewer3dEl.addEventListener('wheel',e=>{
+  e.preventDefault();
+  zoom3d=Math.min(1.8,Math.max(0.3,zoom3d-e.deltaY*0.001));
+  $('v3zoomR').value=Math.round(zoom3d*100); $('v3zoomV').textContent=Math.round(zoom3d*100)+'%'; updateView3d();
+},{passive:false});
+
+function resetView3d(){
+  rotX3d=-25; rotY3d=32; zoom3d=0.85;
+  $('v3rotR').value=rotY3d; $('v3rotV').textContent=rotY3d+'°';
+  $('v3zoomR').value=Math.round(zoom3d*100); $('v3zoomV').textContent=Math.round(zoom3d*100)+'%';
+  $('v3tiltR').value=rotX3d; $('v3tiltV').textContent=rotX3d+'°';
+  updateView3d();
+}
+
+/* ORBIT DRAG */
+let drag3d=false,lx3d=0,ly3d=0;
+viewer3dEl.addEventListener('mousedown',e=>{ if(tool3d!=='orbit')return; drag3d=true; lx3d=e.clientX; ly3d=e.clientY; });
+document.addEventListener('mouseup',()=>{ drag3d=false; painting3d=false; });
+document.addEventListener('mousemove',e=>{
+  if(drag3d&&tool3d==='orbit'){
+    rotY3d=Math.max(-135,Math.min(135,rotY3d+(e.clientX-lx3d)*0.5));
+    $('v3rotR').value=Math.round(rotY3d); $('v3rotV').textContent=Math.round(rotY3d)+'°';
+    lx3d=e.clientX; ly3d=e.clientY; updateView3d();
+  }
+});
+
+/* TOOL */
+function set3dTool(t){
+  tool3d=t;
+  ['orbit','draw','span','erase'].forEach(n=>{ const btn=$('t3'+n[0].toUpperCase()+n.slice(1)); if(btn)btn.classList.toggle('active',n===t); });
+  viewer3dEl.className=t==='draw'?'draw-mode':t==='erase'?'erase-mode':t==='span'?'span-mode':'';
+  const msgs={orbit:'Orbit — drag to rotate',draw:'Draw — click/drag to paint',span:'Span — drag to fit one image',erase:'Erase — click/drag to clear'};
+  $('visu3dStatus').textContent=msgs[t];
+  $('spanInfo3d').style.display=t==='span'?'block':'none';
+}
+
+/* PAINT / ERASE */
+document.addEventListener('pointerdown',e=>{
+  if((tool3d==='draw'||tool3d==='erase')&&e.target.classList.contains('cell3d')){
+    painting3d=true; actOnCell3d(e.target);
+  }
+});
+document.addEventListener('pointermove',e=>{
+  if(painting3d&&(tool3d==='draw'||tool3d==='erase')){
+    const el=document.elementFromPoint(e.clientX,e.clientY);
+    if(el&&el.classList.contains('cell3d'))actOnCell3d(el);
+  }
+});
+document.addEventListener('pointerup',()=>{painting3d=false;});
+
+function actOnCell3d(cell){ if(tool3d==='draw'){if(!selImg3d){$('visu3dStatus').textContent='Pick a tile first!';return;}applyImg3d(cell);}else if(tool3d==='erase')eraseCell3d(cell); }
+
+function highlightSurf3d(n){ document.querySelectorAll('.surf3d').forEach(s=>s.classList.remove('hl-surf3d')); if(surfs3d[n])surfs3d[n].classList.add('hl-surf3d'); }
+function sel3d(n){ activeSurf3d=n; highlightSurf3d(n); $('visu3dStatus').textContent='Paint: '+n; }
+function fillSurf3d(){ if(!selImg3d){$('visu3dStatus').textContent='Pick a tile first!';return;} const el=surfs3d[activeSurf3d]; if(!el)return; el.querySelectorAll('.cell3d').forEach(c=>applyImg3d(c)); }
+function clearSurf3d(){ const el=surfs3d[activeSurf3d]; if(!el)return; el.querySelectorAll('.cell3d').forEach(c=>eraseCell3d(c)); spanStore3d[activeSurf3d]=[]; renderSpans3d(activeSurf3d); }
+
+function applyImg3d(cell){
+  const s=cell.dataset.s,r=parseInt(cell.dataset.r),c=parseInt(cell.dataset.c);
+  eraseSpansAt3d(s,r,c);
+  cell.style.background=''; cell.style.backgroundImage=`url(${selImg3d})`;
+  cell.style.backgroundSize='cover'; cell.style.backgroundPosition='center';
+  storeCell3d(cell);
+}
+function eraseCell3d(cell){
+  const s=cell.dataset.s,r=parseInt(cell.dataset.r),c=parseInt(cell.dataset.c);
+  eraseSpansAt3d(s,r,c);
+  cell.style.backgroundImage=''; cell.style.background='#fff';
+  const k=getCellKey3d(r,c); if(cellStore3d[s])delete cellStore3d[s][k];
+}
+function storeCell3d(cell){
+  const s=cell.dataset.s,k=getCellKey3d(cell.dataset.r,cell.dataset.c);
+  if(!cellStore3d[s])cellStore3d[s]={};
+  cellStore3d[s][k]=cell.style.backgroundImage;
+}
+
+/* SPACER */
+function applySpacerCol3d(){ const g=spacerPx3d(),col=g>0?'#d1d5db':'#fff'; Object.values(surfs3d).forEach(s=>{s.style.gap=g+'px';s.style.background=col;}); }
+$('v3spacer').addEventListener('input',()=>{ $('v3spacerV').textContent=$('v3spacer').value+'px'; applySpacerCol3d(); ['back','left','right','floor'].forEach(n=>renderSpans3d(n)); });
+
+/* VISIBILITY */
+function setVis3d(name,show,updateLabel=true){ const el=surfs3d[name]; if(!el)return; el.style.display=show?'grid':'none'; if(updateLabel){$('v3lbl'+name[0].toUpperCase()+name.slice(1)).textContent=show?'ON':'OFF';} }
+function toggleVis3d(name,checked){ setVis3d(name,checked); }
+
+/* LOGO */
+function loadVisuLogo(e){
+  const file=e.target.files[0]; if(!file)return;
+  const url=URL.createObjectURL(file);
+  $('visuLogoImg').src=url; $('visuLogoImg').style.display='block';
+  $('visuLogoPlaceholder').style.display='none';
+  selImg3d=url; $('visu3dStatus').textContent='Logo set: '+file.name.slice(0,20);
+  if(tool3d==='orbit')set3dTool('draw');
+}
+document.getElementById('visuLogoSlot').addEventListener('click',e=>{
+  if($('visuLogoImg').style.display==='block'){
+    selImg3d=$('visuLogoImg').src;
+    document.querySelectorAll('#visuCarousel img').forEach(i=>i.classList.remove('sel'));
+    $('visuLogoSlot').style.outline='2px solid #38bdf8';
+    $('visu3dStatus').textContent='Logo tile selected';
+    if(tool3d==='orbit')set3dTool('draw');
+    e.stopPropagation();
+  }
+});
+
+function loadVisuTiles(e){
+  $('visu3dStatus').textContent='Tiles added';
+  [...e.target.files].forEach(file=>{
+    const img=document.createElement('img');
+    img.src=URL.createObjectURL(file); img.title=file.name;
+    img.onclick=()=>{
+      selImg3d=img.src;
+      document.querySelectorAll('#visuCarousel img').forEach(i=>i.classList.remove('sel'));
+      $('visuLogoSlot').style.outline='none';
+      img.classList.add('sel');
+      $('visu3dStatus').textContent='Tile: '+file.name.slice(0,22);
+      if(tool3d==='orbit')set3dTool('draw');
+    };
+    $('visuCarousel').appendChild(img);
+  });
+}
+
+/* SCREENSHOT */
+function takeScreenshot3d(){
+  const btn=$('screenshotBtn3d');
+  btn.style.display='none';
+  document.querySelectorAll('.room-upload-bar').forEach(b=>b.style.display='none');
+  html2canvas(viewer3dEl,{
+    backgroundColor:'#16213e',
+    scale:window.devicePixelRatio||2,
+    useCORS:true,allowTaint:true,logging:false
+  }).then(canvas=>{
+    btn.style.display='';
+    document.querySelectorAll('.room-upload-bar').forEach(b=>b.style.display='');
+    const link=document.createElement('a');
+    link.download='aandavar-3d-tiles.png';
+    link.href=canvas.toDataURL('image/png');
+    link.click();
+    $('visu3dStatus').textContent='Screenshot saved!';
+  }).catch(err=>{
+    btn.style.display='';
+    document.querySelectorAll('.room-upload-bar').forEach(b=>b.style.display='');
+    $('visu3dStatus').textContent='Error: '+err.message;
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════
+   PRINT
+═══════════════════════════════════════════════════════════ */
+function buildPrintDocument(includeVisuScreenshot,visuDataUrl){
+  const main=computeMain();
+  const bathTotals=window._bathTotals||{area:0,tiles:0,extra:0,boxesBuy:0};
+  const bathRows=window._bathRows||[];
+  const bathFloor=window._bathFloorRow||null;
+  const L=$('roomLen').value||'—',W=$('roomWid').value||'—',H=$('roomHei').value||'—';
+  const wallTile=$('wallTileSelect').selectedOptions[0].textContent;
+  const floorTile=$('floorTileSelect').selectedOptions[0].textContent;
+  const bathTile=$('bathTileSelect').selectedOptions[0].textContent;
+  const bathWaste=getWaste('bathWasteSelect','bathWasteOther');
+
+  const TH=`style="text-align:left;padding:6px 10px;border:1px solid #ddd;font-size:12px;background:#f5f5f5"`;
+  const TD=`style="padding:6px 10px;border:1px solid #ddd;font-size:12px"`;
+  const TDC=`style="text-align:center;padding:6px 10px;border:1px solid #ddd;font-size:12px"`;
+  const TDH=`style="font-weight:700;text-align:center;padding:6px 10px;border:1px solid #ddd;font-size:12px"`;
+  const TOTAL=`style="font-weight:700;background:#fffbee;padding:6px 10px;border:1px solid #ddd;font-size:12px"`;
+
+  let doc=[];
+  doc.push(`<div style="border-bottom:2px solid #ccc;margin-bottom:16px;padding-bottom:12px;display:flex;align-items:center;gap:12px">
+    <div style="width:36px;height:36px;background:#f5a623;clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:#000;flex-shrink:0">AE</div>
+    <div><h1 style="font-family:sans-serif;font-size:20px;margin:0">Aandavar Enterprises — Tiles Report</h1>
+    <p style="font-size:11px;color:#666;margin-top:2px">Generated: ${new Date().toLocaleString()} | Room: L:${L}ft W:${W}ft H:${H}ft</p></div>
+  </div>`);
+
+  // 3D Screenshot if available
+  if(includeVisuScreenshot&&visuDataUrl){
+    doc.push(`<h2 style="font-size:15px;font-family:sans-serif;margin-bottom:8px">3D Visualization</h2>`);
+    doc.push(`<img src="${visuDataUrl}" style="width:100%;max-width:700px;border:1px solid #ddd;border-radius:6px;margin-bottom:16px">`);
+  }
+
+  // Main calc
+  doc.push(`<h2 style="font-size:15px;font-family:sans-serif">Main Room Calculator <small style="font-weight:400;color:#666">Wall: ${wallTile} | Floor: ${floorTile}</small></h2>`);
+  doc.push(`<table style="width:100%;border-collapse:collapse;margin-bottom:16px"><thead><tr><th ${TH}>Surface</th><th ${TH}>Area ft²</th><th ${TH}>Tile Size</th><th ${TH}>Tiles</th><th ${TH}>Extra</th><th ${TH}>Boxes</th></tr></thead><tbody>
+  ${main.rows.map(r=>`<tr><td ${TD}>${r.surface}</td><td ${TDC}>${typeof r.area==='number'?fmt(r.area,2):r.area}</td><td ${TDC}>${r.tileSize}</td><td ${TDC}>${typeof r.tilesNeeded==='number'?fmt(r.tilesNeeded,0):r.tilesNeeded}</td><td ${TDC}>${typeof r.extraTiles==='number'?fmt(r.extraTiles,0):r.extraTiles}</td><td ${TDH}>${typeof r.boxesBuy==='number'?fmt(r.boxesBuy,0):r.boxesBuy}</td></tr>`).join('')}
+  <tr><td colspan="3" ${TOTAL}>Totals</td><td ${TOTAL}>${fmt(main.totals.totTiles,0)}</td><td ${TOTAL}>${fmt(main.totals.totExtra,0)}</td><td ${TOTAL}>${fmt(main.totals.totBoxesBuy,0)}</td></tr>
+  </tbody></table>`);
+
+  // Bathroom
+  doc.push(`<h2 style="font-size:15px;font-family:sans-serif">Bathroom — Light / Highlight / Dark Partitions <small style="font-weight:400;color:#666">Tile: ${bathTile} | Wastage: ${bathWaste}%</small></h2>`);
+  doc.push(`<table style="width:100%;border-collapse:collapse;margin-bottom:8px"><thead><tr><th ${TH}>Partition</th><th ${TH}>Height ft</th><th ${TH}>Wall Area ft²</th><th ${TH}>Tiles</th><th ${TH}>Extra</th><th ${TH}>Boxes</th></tr></thead><tbody>
+  ${bathRows.map(r=>`<tr><td ${TD}>${r.partition}</td><td ${TDC}>${typeof r.height==='number'?fmt(r.height,2):r.height}</td><td ${TDC}>${typeof r.areaAll==='number'?fmt(r.areaAll,2):r.areaAll}</td><td ${TDC}>${typeof r.tilesNeeded==='number'?fmt(r.tilesNeeded,0):r.tilesNeeded}</td><td ${TDC}>${typeof r.extra==='number'?fmt(r.extra,0):r.extra}</td><td ${TDH}>${typeof r.boxesBuy==='number'?fmt(r.boxesBuy,0):r.boxesBuy}</td></tr>`).join('')}
+  <tr><td colspan="2" ${TOTAL}>Totals</td><td ${TOTAL}>${fmt(bathTotals.area,2)}</td><td ${TOTAL}>${fmt(bathTotals.tiles,0)}</td><td ${TOTAL}>${fmt(bathTotals.extra,0)}</td><td ${TOTAL}>${fmt(bathTotals.boxesBuy,0)}</td></tr>
+  </tbody></table>`);
+
+  if(bathFloor){
+    doc.push(`<h3 style="font-size:13px;font-family:sans-serif;margin-top:12px;margin-bottom:6px">Bathroom Floor</h3>`);
+    doc.push(`<table style="width:100%;border-collapse:collapse;margin-bottom:16px"><thead><tr><th ${TH}>Surface</th><th ${TH}>Area ft²</th><th ${TH}>Tile Size</th><th ${TH}>Tiles</th><th ${TH}>Extra</th><th ${TH}>Boxes</th></tr></thead><tbody>
+    <tr><td ${TD}>${bathFloor.surface}</td><td ${TDC}>${typeof bathFloor.area==='number'?fmt(bathFloor.area,2):bathFloor.area}</td><td ${TDC}>${bathFloor.tileSize}</td><td ${TDC}>${typeof bathFloor.tilesNeeded==='number'?fmt(bathFloor.tilesNeeded,0):bathFloor.tilesNeeded}</td><td ${TDC}>${typeof bathFloor.extraTiles==='number'?fmt(bathFloor.extraTiles,0):bathFloor.extraTiles}</td><td ${TDH}>${typeof bathFloor.boxesBuy==='number'?fmt(bathFloor.boxesBuy,0):bathFloor.boxesBuy}</td></tr>
+    </tbody></table>`);
+  }
+
+  return doc.join('');
+}
+
+/* Main PDF */
+$('savePdfBtn').addEventListener('click',()=>{
+  renderMain(); if(window.bathRender)window.bathRender();
+  $('printView').innerHTML=buildPrintDocument(false,null);
+  setTimeout(()=>{ window.print(); setTimeout(()=>{ $('printView').innerHTML=''; },500); },200);
+});
+
+/* Visu print — takes screenshot then prints */
+function printVisuOutput(){
+  renderMain(); if(window.bathRender)window.bathRender();
+  // Temporarily hide UI buttons
+  const btn=$('screenshotBtn3d'); btn.style.display='none';
+  document.querySelectorAll('.room-upload-bar').forEach(b=>b.style.display='none');
+
+  html2canvas(viewer3dEl,{backgroundColor:'#16213e',scale:window.devicePixelRatio||2,useCORS:true,allowTaint:true,logging:false}).then(canvas=>{
+    btn.style.display='';
+    document.querySelectorAll('.room-upload-bar').forEach(b=>b.style.display='');
+    const dataUrl=canvas.toDataURL('image/png');
+    $('printView').innerHTML=buildPrintDocument(true,dataUrl);
+    setTimeout(()=>{ window.print(); setTimeout(()=>{ $('printView').innerHTML=''; },600); },200);
+  }).catch(err=>{
+    btn.style.display='';
+    document.querySelectorAll('.room-upload-bar').forEach(b=>b.style.display='');
+    // Print without screenshot
+    $('printView').innerHTML=buildPrintDocument(false,null);
+    setTimeout(()=>{ window.print(); setTimeout(()=>{ $('printView').innerHTML=''; },500); },200);
+  });
+}
+
+/* Bathroom-only print */
+function printBathroomReport(){
+  if(window.bathRender)window.bathRender();
+  const bathTotals=window._bathTotals||{area:0,tiles:0,extra:0,boxesBuy:0};
+  const bathRows=window._bathRows||[];
+  const bathFloor=window._bathFloorRow||null;
+  const L=$('roomLen').value||'—',W=$('roomWid').value||'—',H=$('roomHei').value||'—';
+  const bathTile=$('bathTileSelect').selectedOptions[0].textContent;
+  const bathWaste=getWaste('bathWasteSelect','bathWasteOther');
+  const pLight=$('partLightH').value||'—',pHigh=$('partHighH').value||'—',pDark=$('partDarkH').value||'—';
+
+  const TH=`style="text-align:left;padding:6px 10px;border:1px solid #ddd;font-size:12px;background:#f5f5f5"`;
+  const TD=`style="padding:6px 10px;border:1px solid #ddd;font-size:12px"`;
+  const TDC=`style="text-align:center;padding:6px 10px;border:1px solid #ddd;font-size:12px"`;
+  const TDH=`style="font-weight:700;text-align:center;padding:6px 10px;border:1px solid #ddd;font-size:12px"`;
+  const TOTAL=`style="font-weight:700;background:#fffbee;padding:6px 10px;border:1px solid #ddd;font-size:12px"`;
+
+  let doc=[];
+  doc.push(`<div style="border-bottom:2px solid #e8a020;margin-bottom:16px;padding-bottom:10px">
+    <h1 style="font-family:sans-serif;font-size:18px;margin:0;color:#b87000">Aandavar Enterprises — Bathroom Tile Report</h1>
+    <p style="font-size:11px;color:#666;margin-top:3px">Generated: ${new Date().toLocaleString()} | Room: L:${L}ft W:${W}ft H:${H}ft</p>
+    <p style="font-size:11px;color:#333;margin-top:2px">Partitions: Light ${pLight}ft | Highlight ${pHigh}ft | Dark ${pDark}ft | Tile: ${bathTile} | Wastage: ${bathWaste}%</p>
+  </div>`);
+
+  doc.push(`<h2 style="font-size:14px;font-family:sans-serif;margin-bottom:6px">Wall Partitions</h2>`);
+  doc.push(`<table style="width:100%;border-collapse:collapse;margin-bottom:8px"><thead><tr>
+    <th ${TH}>Partition</th><th ${TH}>Height ft</th><th ${TH}>Wall Area ft²</th><th ${TH}>Tiles</th><th ${TH}>Extra</th><th ${TH}>Boxes</th>
+  </tr></thead><tbody>
+  ${bathRows.map(r=>`<tr><td ${TD} style="color:${r.partition==='Light'?'#7a5a30':r.partition==='Highlight'?'#b87000':'#5c3e28'};font-weight:600">${r.partition}</td><td ${TDC}>${fmt(r.height,2)}</td><td ${TDC}>${typeof r.areaAll==='number'?fmt(r.areaAll,2):r.areaAll}</td><td ${TDC}>${typeof r.tilesNeeded==='number'?fmt(r.tilesNeeded,0):r.tilesNeeded}</td><td ${TDC}>${typeof r.extra==='number'?fmt(r.extra,0):r.extra}</td><td ${TDH}>${typeof r.boxesBuy==='number'?fmt(r.boxesBuy,0):r.boxesBuy}</td></tr>`).join('')}
+  <tr><td colspan="2" ${TOTAL}>Wall Totals</td><td ${TOTAL}>${fmt(bathTotals.area,2)}</td><td ${TOTAL}>${fmt(bathTotals.tiles,0)}</td><td ${TOTAL}>${fmt(bathTotals.extra,0)}</td><td ${TOTAL}>${fmt(bathTotals.boxesBuy,0)}</td></tr>
+  </tbody></table>`);
+
+  if(bathFloor){
+    doc.push(`<h2 style="font-size:14px;font-family:sans-serif;margin-top:14px;margin-bottom:6px">Floor</h2>`);
+    doc.push(`<table style="width:100%;border-collapse:collapse"><thead><tr>
+      <th ${TH}>Surface</th><th ${TH}>Area ft²</th><th ${TH}>Tile Size</th><th ${TH}>Tiles</th><th ${TH}>Extra</th><th ${TH}>Boxes</th>
+    </tr></thead><tbody>
+    <tr><td ${TD}>${bathFloor.surface}</td><td ${TDC}>${typeof bathFloor.area==='number'?fmt(bathFloor.area,2):bathFloor.area}</td><td ${TDC}>${bathFloor.tileSize}</td><td ${TDC}>${typeof bathFloor.tilesNeeded==='number'?fmt(bathFloor.tilesNeeded,0):bathFloor.tilesNeeded}</td><td ${TDC}>${typeof bathFloor.extraTiles==='number'?fmt(bathFloor.extraTiles,0):bathFloor.extraTiles}</td><td ${TDH}>${typeof bathFloor.boxesBuy==='number'?fmt(bathFloor.boxesBuy,0):bathFloor.boxesBuy}</td></tr>
+    </tbody></table>`);
+  }
+
+  $('printView').innerHTML=doc.join('');
+  setTimeout(()=>{ window.print(); setTimeout(()=>{ $('printView').innerHTML=''; },500); },200);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════════════════════ */
+renderMain();
+if(window.bathRender)window.bathRender();
+buildRoom3d();
+</script>
+</body>
+</html>
